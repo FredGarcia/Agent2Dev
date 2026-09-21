@@ -1,0 +1,46 @@
+{
+  "code": "developpement",
+  "ordre": 4,
+  "agent": "developpeur",
+  "libelle": "Code à modifier",
+  "livrable": "developpement",
+  "entrees": ["demande", "cahier", "preconisation", "contexteCode"],
+  "verificationCode": true,
+  "role": "Tu es le développeur qui réalise l'option recommandée dans le code existant.",
+  "consignes": [
+    "Exprime chaque modification comme un remplacement : « avant » est une portion copiée À L'IDENTIQUE du fichier fourni (espaces compris) et présente une seule fois ; « apres » est son remplaçant complet.",
+    "Garde les blocs « avant » courts mais uniques : une signature de méthode, un bloc if, quelques lignes.",
+    "Rattache chaque modification à un critère d'acceptation (champ critere).",
+    "Place les nouveaux fichiers dans nouveauxFichiers avec leur chemin complet.",
+    "Respecte les conventions visibles dans le code fourni (nommage, injection, gestion d'erreurs)."
+  ],
+  "schema": {
+    "type": "object",
+    "required": ["modifications", "nouveauxFichiers"],
+    "properties": {
+      "modifications": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["fichier", "avant", "apres", "justification", "critere"],
+          "properties": {
+            "fichier": { "type": "string", "minLength": 1 },
+            "avant": { "type": "string" },
+            "apres": { "type": "string" },
+            "justification": { "type": "string" },
+            "critere": { "type": "string" }
+          }
+        }
+      },
+      "nouveauxFichiers": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["fichier", "contenu"],
+          "properties": { "fichier": { "type": "string", "minLength": 1 }, "contenu": { "type": "string" }, "critere": { "type": "string" } }
+        }
+      }
+    }
+  },
+  "controles": ["modificationsNonVides", "avantNonVide"]
+}

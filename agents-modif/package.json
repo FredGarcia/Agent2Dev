@@ -1,0 +1,12 @@
+{
+  "name": "atelier-modification",
+  "version": "1.0.0",
+  "description": "Atelier multi-agents : demande de modification de code → analyse, cahier des charges, préconisations, code à modifier. Boucle observant / apprenant.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js"
+  }
+}

@@ -1,0 +1,112 @@
+{
+  "code": "cahier",
+  "ordre": 2,
+  "agent": "redacteur",
+  "libelle": "Cahier des charges",
+  "livrable": "cahier",
+  "entrees": [
+    "demande",
+    "analyse"
+  ],
+  "role": "Tu es le rédacteur du cahier des charges : tu transformes la demande en US avec critères d'acceptation numérotés.",
+  "consignes": [
+    "Reformule la demande sous forme de règle métier vérifiable.",
+    "Explicite les hypothèses (codes H1, H2…) et les décisions déjà tranchées.",
+    "Rédige une ou plusieurs US (codes US-1, US-2…) au format « En tant que / je veux / afin de ».",
+    "Numérote les critères d'acceptation CA-<n° US>.<n> ; chacun est observable et binaire."
+  ],
+  "schema": {
+    "type": "object",
+    "required": [
+      "demandeReformulee",
+      "hypotheses",
+      "decisions",
+      "us"
+    ],
+    "properties": {
+      "demandeReformulee": {
+        "type": "string",
+        "minLength": 1
+      },
+      "hypotheses": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "code",
+            "texte"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "texte": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "decisions": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "us": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": [
+            "code",
+            "titre",
+            "enTantQue",
+            "jeVeux",
+            "afinDe",
+            "criteres"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "titre": {
+              "type": "string"
+            },
+            "enTantQue": {
+              "type": "string"
+            },
+            "jeVeux": {
+              "type": "string"
+            },
+            "afinDe": {
+              "type": "string"
+            },
+            "criteres": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": [
+                  "code",
+                  "texte"
+                ],
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "texte": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "controles": [
+    "criteresUniques"
+  ]
+}
