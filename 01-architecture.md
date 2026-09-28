@@ -1,18 +1,18 @@
 ---
 espace: a2d
 document: architecture
-version: 0.1.0
+version: 0.2.0
 statut: proposition
-date: 2026-09-27
+date: 2026-09-28
 amont:
-  - a2d/cadrage@0.1.0
-  - bin/architecture@0.1.0
+  - a2d/cadrage@0.2.0
+  - bin/architecture@0.2.0
   - a2t/architecture@0.1
 ---
 
 # Agent2Dev — Architecture
 
-> Étape 1 sur 8 · proposition soumise à ratification · 27 septembre 2026
+> Étape 1 sur 8 · version 0.2.0 du 28 septembre : arbitrages du binôme intégrés, le reste soumis à ratification
 > Hypothèses (H), tensions (T) : [`00-cadrage.md`](00-cadrage.md) · Niveau système : [`binome/docs/01-architecture.md`](../../binome/docs/01-architecture.md)
 
 1. Principe directeur
@@ -33,10 +33,10 @@ amont:
 
 ## 1. Principe directeur
 
-**Le moteur conçoit, le noyau exécute, l'humain ratifie, Agent2Test juge.**
+**Le moteur conçoit, les agents déterministes exécutent, l'humain ratifie, Agent2Test juge.**
 
-- **Le moteur conçoit.** Le moteur (tout LLM, par le port moteur du socle) ne produit que des données : analyse, oracle proposé, scénarios, préconisations, plan, modifications, diagnostics. Chaque sortie est validée contre un schéma fermé et des contrôles nommés, et porte ses avertissements typés.
-- **Le noyau exécute.** Trois agents déterministes agissent, chacun seul dans son domaine : `depot` écrit, dans l'arbre de travail dédié ; `exploitant` exécute, les commandes du profil ratifié ; `liaison` parle, à Agent2Test.
+- **Le moteur conçoit.** Le moteur (Gemini par défaut, tout LLM par le port moteur du noyau) ne produit que des données : analyse, oracle proposé, scénarios, préconisations, plan, modifications, diagnostics. Chaque sortie est validée contre un schéma fermé et des contrôles nommés, et porte ses avertissements typés.
+- **Les agents déterministes exécutent.** Trois agents agissent, chacun seul dans son domaine : `depot` écrit, dans l'arbre de travail dédié ; `exploitant` exécute, les commandes du profil ratifié ; `liaison` parle, à Agent2Test.
 - **Agent2Test juge.** Agent2Dev ne se note pas lui-même : la conformité vient des verdicts d'Agent2Test sur l'oracle ratifié (I5).
 - **L'humain ratifie.** Il décide aux points de contrôle, selon leur régime. Il voit la boucle en continu et peut l'arrêter. Entre deux points, les agents avancent seuls, dans l'enveloppe d'autonomie.
 
@@ -46,7 +46,7 @@ amont:
 
 ### 2.1 L'axiome
 
-L'axiome et le tableau opératoire des sept phases sont ceux du socle : `binome/docs/01-architecture.md` §2.1. Ils ne sont pas répétés ici.
+L'axiome et le tableau opératoire des sept phases sont ceux de la spécification commune du binôme : `binome/docs/01-architecture.md` §2.1. Ils ne sont pas répétés ici.
 
 ### 2.2 Quatre échelles, une seule classe de cycle
 
@@ -54,13 +54,13 @@ L'axiome et le tableau opératoire des sept phases sont ceux du socle : `binome/
 |---|---|---|---|---|
 | E1 | tâche du plan : fichiers, critères, dépendances | entrées : plan ratifié (itération 1), ou anomalies et diagnostic (itération *n*) ; budget restant | demande, indices, profil ratifié, commit de base | fiches, règles, constitutions, profil, contrat |
 | E2 | contenu à jour des fichiers, voisinage, leçons épinglées | arbre dédié à jour, instantané de référence, dossier technique ciblé | carte du projet, dossier technique, mémoire, référentiel épinglé, arbre et branche | file des demandes, verrou de l'instance, présence d'Agent2Test, versions actives |
-| E3 | modifications proposées, vérifiées, appliquées | cycles de tâche → contrôles locaux → CP-3 → commit → déploiement → livraison | cadrage (CP-1) → conception (CP-2) → cycles d'itération | cycles de demande |
+| E3 | modifications proposées, vérifiées, appliquées | cycles de tâche → contrôles locaux → CP-3 → verrou de l'instance → commit → déploiement → livraison | cadrage (CP-1) → conception (CP-2) → cycles d'itération | cycles de demande, en parallèle ; livraisons sérialisées par le verrou de l'instance |
 | E4 | contrôle de la tâche : compilation, tests ciblés, garde statique | campagne d'Agent2Test : verdicts par critère (couplage) ; contrôles locaux | matrice critères × itérations, régressions, convergence | métriques de fonctionnement (O1) |
 | E5 | ligne de journal, diff de la tâche | rapport d'itération | livrable de demande | tableaux de bord, vue binôme |
 | E6 | correction dans le budget (O1) | diagnostic ; correction ou contestation | itérer, arbitrer (CP-5), leçons candidates | réflexivité (O2) : mesures, propositions, retours arrière |
 | E7 | résultat remonté à l'itération | résultat remonté à la demande | clôture (CP-6), branche prête, `demande.close`, mémoire | gouvernance humaine, couplage avec Agent2Test |
 
-Le cycle est la classe `Cycle7E` du socle. L'orchestrateur l'instancie pour les quatre échelles. L'ordonnanceur d'`agents-modif` disparaît : la file et le verrou de l'instance sont l'E2 et l'E3 de l'échelle Système (D3).
+Le cycle est la classe `Cycle7E` du noyau d'Agent2Dev, conforme à la spécification du binôme (bin §2 et §3.2). L'orchestrateur l'instancie pour les quatre échelles. L'ordonnanceur d'`agents-modif` disparaît : la file des demandes actives et le verrou de l'instance sont l'E2 et l'E3 de l'échelle Système (D3, D20).
 
 La récursion suit a2t/I1 : l'E3 d'une échelle est la suite des cycles de l'échelle inférieure. Le couplage suit bin/I3 : la livraison, fin de l'E3 d'une itération, ouvre une campagne d'Agent2Test, dont le rapport alimente l'E4 de l'itération.
 
@@ -87,7 +87,7 @@ flowchart TB
 
 ### 2.3 Deuxième axe : les organes
 
-Chaque agent traite chaque message comme un cycle 7E, par la classe `Cellule7E` du socle :
+Chaque agent traite chaque message comme un cycle 7E, par la classe `Cellule7E` du noyau :
 
 | E1 | E2 | E3 | E4 | E5 | E6 | E7 |
 |---|---|---|---|---|---|---|
@@ -103,7 +103,7 @@ La trace de chaque appel porte le vecteur de ses sept durées. Un agent détermi
 
 | Lieu | Forme visible |
 |---|---|
-| Code | `Cycle7E` et `Cellule7E` du socle ; toute échelle et tout agent en héritent |
+| Code | `Cycle7E` et `Cellule7E` du noyau ; toute échelle et tout agent en héritent |
 | Données | chaque ligne de journal porte `echelle` et `phase` ; une demande se relit comme un arbre 7E imbriqué |
 | Commits | chaque commit porte sa demande, son itération et ses critères |
 | IHM | chaque demande s'affiche en roue 7E, dépliable jusqu'à la tâche |
@@ -142,8 +142,8 @@ flowchart TB
     EXP["exploitant<br/>seul exécutant"]
     MEM["memoire<br/>RAG"]
   end
-  subgraph C0["C0 Socle commun"]
-    K["Cycle7E · Cellule7E · bus · validateur<br/>moteurs · stockage · journal · cartographie<br/>documents · protocole · constitution"]
+  subgraph C0["C0 Noyau"]
+    K["Cycle7E · Cellule7E · bus · validateur<br/>moteurs · stockage · journal<br/>documents · protocole · constitution"]
   end
   subgraph C4["C4 Observabilité O1 · E4-E5"]
     direction LR
@@ -176,19 +176,19 @@ flowchart TB
 
 | Couche | Module | Responsabilité unique | Fichier possédé | Moteur | Phase |
 |---|---|---|---|---|---|
-| C0 Socle | bibliothèque du binôme | cycle, cellule, bus, validateur, moteurs, stockage, journal, cartographie, documents, protocole, constitution | — | — | toutes |
+| C0 Noyau | noyau d'Agent2Dev | cycle, cellule, bus, validateur, moteurs, stockage, journal, documents, protocole, constitution ; conforme aux spécifications du binôme (bin §3.2) | — | — | toutes |
 | C1 Substrat | `depot` | seul écrivain du projet : arbre dédié, branche, vérification « avant / après », garde statique, application, commit, retour arrière | `depot` | non | E3 |
 | | `exploitant` | seul exécutant : commandes du profil ratifié, instantanés et restaurations de base, sondes | `exploitant` | non | E3, E4 |
 | | `memoire` | RAG hybride sur le code et sur les demandes passées ; mémoire persistante | `memoire` | non | E2 |
-| C2 Métier | `scanner` | carte du projet par la cartographie du socle, incrémentale ; proposition du profil | `scanner` | non | E1 |
+| C2 Métier | `scanner` | carte du projet (§8.5), incrémentale ; proposition du profil ; recouvrements entre demandes actives | `scanner` | non | E1 |
 | | `analyste-code` | dossier technique d'une demande : fragments, voisinage, conventions, tests existants ; suspects d'une anomalie | `analyste-code` | non | E2 |
 | | `generique` | une classe, sept fiches ; chaque fiche est un agent sur le bus (§3.3) | — | oui | E3, E6 |
-| C3 Pilotage | `orchestrateur` | cycles Système, Demande, Itération, Tâche ; file ; verrou de l'instance ; points de contrôle ; régulation de la convergence | `orchestrateur` | non | E3 |
+| C3 Pilotage | `orchestrateur` | cycles Système, Demande, Itération, Tâche ; file et demandes actives ; verrou de l'instance ; points de contrôle ; régulation de la convergence | `orchestrateur` | non | E3 |
 | C4 Observabilité O1 | `journal` | consigner et chaîner ; projeter le livrable | `journal` | non | E5 |
 | | `observateur` | mesurer le fonctionnement, alerter | `observateur` | non | E4 |
 | C5 Réflexivité O2 | `apprenant` | tirer des leçons candidates des décisions humaines | `apprenant` | option | E6 |
 | | `reflexif` | observer critères, observateurs, apprentissage et jugements d'Agent2Test ; proposer ; déclencher les retours arrière | `reflexif` | non | E6 |
-| | `referentiel` | versionner fiches et règles, épingler par demande, tenir le grand livre, extraire le modèle de soi | `referentiel` | non | E6 |
+| | `referentiel` | versionner fiches et règles, épingler par demande, tenir le grand livre, extraire le modèle de soi, reporter les valeurs ratifiées dans les documents | `referentiel` | non | E6 |
 | C6 Interfaces | `tableau-de-bord` | IHM opérateur HTTP + SSE, vue binôme | — | non | E7 |
 | | `mcp` | serveur MCP pour l'IDE : pilotage, supervision, mode accompagné | — | non | E7 |
 | | `liaison` | membrane avec Agent2Test : protocole binôme, boîtes durables, plan de tests | `liaison` | non | E7 |
@@ -197,7 +197,7 @@ Règles de composition :
 
 - **Un propriétaire par fichier.** Un fichier de stockage a un seul propriétaire. Un agent lit les données d'un autre en appelant l'une de ses actions.
 - **Une classe, sept fiches.** Les sept fiches sont une seule classe, l'`AgentGenerique` d'`agents-modif` porté sur `Cellule7E`. Ajouter une phase, c'est ajouter une fiche.
-- **Modules désactivables.** Chaque module se désactive par configuration. Le palier minimal fait ce que fait `agents-modif`, plus l'écriture dans l'arbre dédié : socle, `depot`, `scanner`, `generique`, `orchestrateur`, `journal`, `tableau-de-bord`. Les paliers suivants relèvent de la roadmap (étape 4).
+- **Modules désactivables.** Chaque module se désactive par configuration. Le palier minimal fait ce que fait `agents-modif`, plus l'écriture dans l'arbre dédié : noyau, `depot`, `scanner`, `generique`, `orchestrateur`, `journal`, `tableau-de-bord`. Les paliers suivants relèvent de la roadmap (étape 4).
 
 Une responsabilité, un seul lieu :
 
@@ -206,14 +206,15 @@ Une responsabilité, un seul lieu :
 | écrire dans le projet | `depot` |
 | exécuter une commande | `exploitant` |
 | parler à Agent2Test | `liaison` |
-| lire les sources pour en faire une carte | `scanner`, par la cartographie du socle |
+| lire les sources pour en faire une carte | `scanner` |
 | composer le contexte code d'un appel au moteur | `analyste-code` |
-| appeler un LLM | port moteur du socle, par les fiches |
-| valider une sortie | `validateur` du socle |
-| dérouler un cycle | `Cycle7E` du socle |
+| appeler un LLM | port moteur du noyau, par les fiches |
+| valider une sortie | `validateur` du noyau |
+| dérouler un cycle | `Cycle7E` du noyau |
 | décider de la suite d'une boucle | `orchestrateur` |
 | écrire le journal | `journal` |
 | versionner une règle ou une fiche | `referentiel` |
+| écrire dans les documents d'Agent2Dev | `referentiel`, valeurs ratifiées en CP-4 seulement |
 
 ### 3.3 Les sept fiches
 
@@ -227,7 +228,7 @@ Une responsabilité, un seul lieu :
 | `developpement` | `developpeur` | tâche | tâche, fichiers à jour, voisinage ; diagnostic en correction | remplacements « avant / après », créations, suppressions | `modificationsNonVides`, `avantNonVide`, `rattacheesAuPlan`, `cheminsAutorises` |
 | `diagnostic` | `diagnosticien` | itération, E6 | rapport de campagne, traçabilité, suspects | par anomalie : cause racine présumée, fichiers, stratégie, confiance ; ou contestation argumentée | `anomaliesTraitees`, `contestationFondee` |
 
-Toute sortie de fiche peut porter des avertissements. Leur schéma est défini une seule fois, dans le validateur du socle : `{ code, gravite, texte, portee }`, avec la gravité `info`, `attention` ou `bloquant`. Les avertissements alimentent les écarts des points de contrôle (§5.2). Les quatre fiches d'`agents-modif` deviennent les versions 1.0.0 d'`analyse`, `cahier`, `preconisation` et `developpement`, débarrassées de toute mention d'un projet.
+Toute sortie de fiche peut porter des avertissements. Leur schéma est défini une seule fois, dans le validateur du noyau : `{ code, gravite, texte, portee }`, avec la gravité `info`, `attention` ou `bloquant`. Les avertissements alimentent les écarts des points de contrôle (§5.2). Les quatre fiches d'`agents-modif` deviennent les versions 1.0.0 d'`analyse`, `cahier`, `preconisation` et `developpement`, débarrassées de toute mention d'un projet.
 
 ---
 
@@ -235,7 +236,7 @@ Toute sortie de fiche peut porter des avertissements. Leur schéma est défini u
 
 ### 4.1 Bus
 
-API du socle, héritée d'`agents-modif` :
+API du noyau, héritée d'`agents-modif` :
 
 ```js
 bus.demander(cible, action, charge, contexte, { delaiMs }) // appel nommé : réponse, trace, délai de garde
@@ -253,7 +254,7 @@ Le détail des schémas relève de l'étape 3.
 
 | Agent | Actions | Événements émis |
 |---|---|---|
-| `scanner` | `scanner({ portee })`, `carte(filtre)`, `profil()` | `carte.mise_a_jour`, `profil.propose` |
+| `scanner` | `scanner({ portee })`, `carte(filtre)`, `profil()`, `recouvrements(fichiers)` | `carte.mise_a_jour`, `profil.propose` |
 | `analyste-code` | `dossier(demande, portee)`, `impact(fichiers)`, `suspects(anomalie)` | — |
 | les sept fiches | `produire(entree, lecons, correction)`, `decrire()` | `validation_echec`, `avertissement` |
 | `depot` | `preparer(demande)`, `lire(fichiers)`, `verifier(modifications)`, `appliquer(modifications)`, `commit(iteration)`, `diff(iteration)`, `revenir(commit)` | `arbre.pret`, `commit.enregistre` |
@@ -265,7 +266,7 @@ Le détail des schémas relève de l'étape 3.
 | `observateur` | `mesures(filtre)` | `alerte` |
 | `apprenant` | `lecons(filtre)`, `leconsPour(fiche, moteur)` | `lecon.candidate` |
 | `reflexif` | `bilan(filtre)` | `proposition.recalibrage`, `retour.arriere` |
-| `referentiel` | `fiche(code, moteur)`, `epingler(demande)`, `appliquer(decision)`, `revenir(version)`, `grandLivre(filtre)`, `modeleDeSoi()` | `regle.appliquee` |
+| `referentiel` | `fiche(code, moteur)`, `epingler(demande)`, `appliquer(decision)`, `reporter(regle, valeur)`, `revenir(version)`, `grandLivre(filtre)`, `modeleDeSoi()` | `regle.appliquee`, `document.mis_a_jour`, `constitution.modifiee` |
 
 ### 4.3 Port moteur
 
@@ -275,13 +276,13 @@ moteur.completer({ systeme, message, schema, fiche, version }) // → { texte, u
 
 | Adaptateur | Usage |
 |---|---|
+| `gemini-cli` (défaut) | mode autonome : Gemini CLI sans tête, authentifié par la licence Gemini Code Assist, qui réutilise les identifiants mis en cache lors d'une première connexion. Appel `gemini -p … --output-format json`, réponse lue dans le champ `response`. Les outils natifs sont désactivés (`tools.core` vide, mode d'approbation `plan`) : le moteur rédige, il n'agit pas. Un sous-processus par appel, avec son seul contexte. |
+| `externe` | mode accompagné : Gemini Code Assist dans l'IDE, ou tout agent d'IDE, récupère la rédaction par MCP et la soumet ; la tâche attend |
+| `compatible-openai` | tout serveur exposant `/v1/chat/completions` : Ollama, vLLM, LM Studio en local (profil `souverain`), ou toute passerelle autorisée |
+| `anthropic` | API Messages ; c'est le moteur actuel d'`agents-modif`, conservé pour la compatibilité multi-LLM |
 | `simulation` | déterministe, sans réseau : démonstrations, tests d'Agent2Dev, recette en simulation |
-| `compatible-openai` | tout serveur exposant `/v1/chat/completions` : Ollama, vLLM, LM Studio en local (profil souverain), ou toute passerelle autorisée |
-| `anthropic` | API Messages ; c'est le moteur actuel d'`agents-modif`, conservé |
-| `gemini-cli` | Gemini CLI sans tête : `gemini -p … --output-format json`, réponse lue dans le champ `response`. Les outils natifs sont désactivés (`tools.core` vide, mode d'approbation `plan`) : le moteur rédige, il n'agit pas. |
-| `externe` | mode accompagné : Gemini Code Assist, ou tout agent d'IDE, récupère la rédaction par MCP et la soumet ; la tâche attend |
 
-- **Choix du moteur.** Il se fait par configuration, pour toute la tête ou fiche par fiche (H9).
+- **Choix du moteur.** Il se fait par configuration, pour toute la tête ou fiche par fiche (H9). Par défaut, `gemini-cli` sert toutes les fiches (bin/D21) ; Agent2Test utilise le même moteur, dans des contextes séparés (bin/D16, bin/I8).
 - **Journalisation.** Chaque appel est journalisé avec la fiche et sa version composée, le moteur, l'empreinte SHA-256 du prompt rendu, les identifiants des fragments de mémoire injectés et l'usage.
 
 ### 4.4 MCP : IDE et mode accompagné
@@ -446,7 +447,7 @@ Le livrable est une projection du journal pour une demande. Il est produit en Ma
 
 ## 5. Flux et points de contrôle
 
-### 5.1 Demande nominale, première itération
+### 5.1 Demande nominale, première itération, en autonomie
 
 *Diagramme de séquence (UML)*
 
@@ -470,12 +471,12 @@ sequenceDiagram
   Note over O: E3 · cadrage
   O->>G: analyse → cahier → scénarios
   G-->>O: oracle, scénarios, avertissements
-  O-->>H: CP-1 cadrage
-  H->>O: valider
-  O->>L: plan.propose
+  Note over O: CP-1 en differe : décision mise en file
+  O->>L: plan.propose (oracle à ratifier)
   Note over O: E3 · conception
   O->>G: préconisation → plan de réalisation
-  O-->>H: CP-2 conception (régime ecart)
+  O->>S: recouvrements(fichiers du plan)
+  Note over O: CP-2 en differe
   loop chaque tâche du plan
     O->>G: developpement(tâche)
     G-->>O: modifications
@@ -483,13 +484,15 @@ sequenceDiagram
     O->>X: controler(tâche)
     X-->>O: compilation, erreurs structurées
   end
-  O-->>H: CP-3 livraison (régime differe)
+  Note over O: CP-3 en differe, puis verrou de l'instance
   O->>P: commit(itération 1)
   O->>X: restaurer, construire, démarrer, sonder
   X-->>O: sonde positive
   O->>L: livraison.effective
-  L-->>O: campagne.rapport
+  L-->>O: campagne.rapport, verrou rendu
   Note over O: E4 · état de convergence
+  H->>I: décisions différées, à tout moment
+  I->>O: decider(CP-1, ratifier)
 ```
 
 ### 5.2 Points de contrôle
@@ -497,17 +500,17 @@ sequenceDiagram
 | CP | Moment | Qui | Décisions | Régime par défaut | Plancher |
 |---|---|---|---|---|---|
 | CP-0 Profil | premier usage d'un projet ; changement détecté d'un fichier de construction, de Compose ou de migrations sur la branche de base | développeur | valider · corriger · rejeter | presenter | presenter |
-| CP-1 Cadrage | après l'analyse, le cahier et les scénarios | développeur | valider · corriger, commentaire obligatoire · rejeter | presenter | differe |
-| CP-2 Conception | après les préconisations et le plan de réalisation | développeur | valider · corriger · rejeter | ecart | differe |
+| CP-1 Cadrage | après l'analyse, le cahier et les scénarios | développeur | valider · corriger, commentaire obligatoire · rejeter | differe | differe |
+| CP-2 Conception | après les préconisations et le plan de réalisation | développeur | valider · corriger · rejeter | differe | differe |
 | CP-3 Livraison | après les tâches et les contrôles locaux, avant le commit et le déploiement | développeur | valider · corriger · rejeter, avec retour au dernier état ratifié | differe | differe |
 | CP-4 Gouvernance | proposition de règle : leçon, recalibrage, amendement de document | référent, depuis le tableau de bord seulement | ratifier · amender · refuser | presenter, asynchrone | presenter |
 | CP-5 Arbitrage | sortie d'enveloppe, oscillation, contestation maintenue, avertissement bloquant non levé | développeur | accorder un budget pour la demande · réorienter vers CP-1 ou CP-2 · abandonner · clore en l'état | presenter | presenter |
 | CP-6 Clôture | oracle conforme sans régression ; en mode solo, contrôles locaux verts | développeur | accepter · rouvrir · abandonner | differe | differe |
 
-Les régimes sont ceux du binôme (`binome/docs/01-architecture.md` §5.1). Pour le régime `ecart`, un objet présente un écart dans les cas suivants :
+Par défaut, chaque point est à son plancher (bin/D20) : seuls CP-0 et CP-5 arrêtent la demande, avec les quatre cas forcés ci-dessous ; CP-4, lui aussi en `presenter`, est asynchrone et ne l'arrête pas. Les régimes sont ceux du binôme (`binome/docs/01-architecture.md` §5.1). Pour un point relevé au régime `ecart`, un objet présente un écart dans les cas suivants :
 
 - **CP-1** : avertissement `attention` ou `bloquant` ; question ouverte dans l'analyse ; critère sans scénario ; scénario non automatisable.
-- **CP-2** : avertissement `attention` ou `bloquant` ; fichier hors du périmètre de l'analyse ; option recommandée d'effort « fort » ; migration de schéma prévue ; plan au-delà de la moitié d'un budget.
+- **CP-2** : avertissement `attention` ou `bloquant` ; fichier hors du périmètre de l'analyse ; option recommandée d'effort « fort » ; migration de schéma prévue ; plan au-delà de la moitié d'un budget ; fichier déjà modifié par une autre demande active (T7).
 - **CP-3** : fichier hors du plan ; test existant modifié ; avertissement de la garde statique.
 - **CP-6** : critère devenu conforme seulement après une contestation ; régression corrigée pendant la demande.
 
@@ -544,6 +547,7 @@ stateDiagram-v2
   state "Cadrage" as Cadrage
   state "Conception" as Conception
   state "Réalisation" as Realisation
+  state "Attente de l'instance" as AttenteInstance
   state "Déploiement" as Deploiement
   state "En campagne" as EnCampagne
   state "Évaluation" as Evaluation
@@ -555,25 +559,27 @@ stateDiagram-v2
   Recue --> Cadrage : carte, dossier technique
   Cadrage --> Conception : CP-1
   Conception --> Realisation : CP-2
-  Realisation --> Deploiement : CP-3
-  Deploiement --> Realisation : échec (O1)
+  Realisation --> AttenteInstance : CP-3
+  AttenteInstance --> Deploiement : verrou obtenu
+  Deploiement --> Realisation : échec (O1), verrou rendu
   Deploiement --> EnCampagne : livraison.effective
   EnCampagne --> Deploiement : campagne.refusee
-  EnCampagne --> Evaluation : campagne.rapport
+  EnCampagne --> Evaluation : rapport, verrou rendu
   Evaluation --> Conforme : oracle conforme
   Evaluation --> Realisation : correction
   Evaluation --> Arbitrage : hors enveloppe
   Arbitrage --> Realisation : budget accordé
   Arbitrage --> Cadrage : réorienter le quoi
   Arbitrage --> Conception : réorienter le comment
-  Arbitrage --> Abandonnee : abandon
   Arbitrage --> Close : clore en l'état
+  Arbitrage --> Abandonnee : abandon
   Conforme --> Close : CP-6
   Close --> [*]
   Abandonnee --> [*]
 ```
 
 - **Suspension.** Tout état peut être suspendu par l'arrêt d'urgence ; il reprend là où il s'était arrêté.
+- **Demandes actives.** Plusieurs demandes parcourent ce cycle en même temps, dans la limite du §6.6. Une seule à la fois tient le verrou de l'instance, de « Déploiement » au rapport de campagne ; l'ordre d'attente est celui d'arrivée (bin/D22).
 - **Mode solo**, sans Agent2Test : l'état « En campagne » est sauté, et l'évaluation porte sur les contrôles locaux. La demande se clôt alors avec la mention « non testée » (bin/D17).
 
 ---
@@ -614,7 +620,7 @@ stateDiagram-v2
 | Recalibrer les boucles de rétroaction | Propositions bornées sur les budgets, les poids du dossier technique, les délais et les seuils. Chacune porte ses preuves et l'effet attendu. |
 | Auto-modification contrôlée des règles | Cycle de vie d'une règle : candidate → ratifiée → active → suspendue ou retirée. Adoption seulement en CP-4 ; retour arrière autonome si la mesure se dégrade. |
 | Mémoire réflexive de l'évolution | Grand livre du `referentiel` : chaque version, sa cause, ses preuves, sa ratification, son effet mesuré, ses retours arrière ; chaîné par empreintes. |
-| Modèle de soi | Confrontation des hypothèses et des valeurs par défaut documentées aux mesures ; dérive entre documents et configuration ; propositions d'amendement de documents (binôme §9.6). |
+| Modèle de soi | Confrontation des hypothèses et des valeurs documentées aux mesures ; dérive entre documents et configuration ; report des valeurs ratifiées dans les documents ; propositions d'amendement pour le reste (binôme §9.6). |
 
 **Garde anti-Goodhart.** Agent2Dev pourrait apprendre à satisfaire ses indicateurs plutôt que la demande. Les dérives prévisibles sont connues :
 
@@ -631,14 +637,15 @@ Les invariants I5 et I15 et la constitution du binôme (bin/I2) les ferment. En 
 |---|---|---|---|
 | 0 | réponse fixe | vérification « avant / après », sonde, commandes du profil | personne |
 | I | correction dans un ensemble fixe d'alternatives | renvoi au moteur avec ses écarts, recompilation, redéploiement, itération de correction | le système, dans l'enveloppe |
-| II | changement de l'ensemble des alternatives : apprendre à apprendre | leçons injectées dans les fiches ; poids du dossier technique et budgets recalibrés | proposé par le système, ratifié en CP-4 |
-| III | changement du système des ensembles | constitution, points de contrôle et planchers, contrat, documents normatifs | l'humain seul, par une version publiée |
+| II | changement de l'ensemble des alternatives : apprendre à apprendre | leçons injectées dans les fiches ; poids du dossier technique et budgets recalibrés | proposé par le système, ratifié en CP-4, reporté dans les documents par le `referentiel` |
+| III | changement du système des ensembles | constitution, points de contrôle et planchers, bornes, spécifications communes | l'humain seul |
 
 ### 6.5 Auto-modification asymétrique
 
 - **Le système peut, seul** : suspendre une leçon ou un recalibrage dont l'effet mesuré se dégrade, c'est-à-dire revenir au dernier état ratifié.
 - **Le système ne peut pas, seul** : adopter une règle nouvelle, élargir une borne, relever un budget, abaisser un régime, supprimer ou assouplir un point de contrôle.
 - **Épinglage** : chaque demande s'exécute avec un instantané du référentiel pris à son E2. Un changement de règle ne touche jamais une demande en cours.
+- **Report** : une valeur ratifiée en CP-4 est écrite par le `referentiel` dans le tableau du §6.6, qui reste ainsi le reflet exact des réglages en vigueur (bin/T9).
 
 *Diagramme de composants (UML, en flowchart Mermaid) — les deux boucles*
 
@@ -671,14 +678,15 @@ flowchart LR
 
 ### 6.6 Ce qui peut changer, ce qui ne change pas
 
-**Modifiable, après CP-4 et dans les bornes de la constitution.** Les valeurs par défaut sont à confirmer au point de contrôle de cette étape.
+**Modifiable, après CP-4 et dans les bornes de la constitution.** La colonne « Valeur » porte la valeur en vigueur : les défauts ci-dessous, à confirmer au point de contrôle de cette étape, puis les valeurs ratifiées en CP-4, que le `referentiel` y reporte (bin/T9). Les bornes font partie de la constitution ; les valeurs n'en font pas partie.
 
-| Règle | Défaut | Bornes |
+| Règle | Valeur | Bornes |
 |---|---|---|
 | consignes et exemples des fiches (leçons) | — | ne contredisent pas la constitution ; indexées par moteur |
+| demandes actives simultanées | 3 | [1 ; 5] |
 | itérations par demande | 5 | [1 ; 10] |
 | stagnation tolérée, en itérations sans progrès | 2 | [1 ; 3] |
-| durée d'une demande, hors attentes humaines | 4 h | [30 min ; 24 h] |
+| durée d'une demande, hors attentes humaines et attente de l'instance | 4 h | [30 min ; 24 h] |
 | fichiers modifiés par itération | 25 | [1 ; 50] |
 | lignes modifiées par itération | 800 | [50 ; 3 000] |
 | tentatives de compilation par tâche | 3 | [1 ; 5] |
@@ -690,21 +698,21 @@ flowchart LR
 | délai d'ouverture d'une campagne après livraison | 10 min | [1 min ; 60 min] |
 | délai de la sonde de santé | 5 min | [30 s ; 20 min] |
 
-**Exclu de toute auto-modification.** Le système ne modifie jamais de code : ni celui du socle, ni celui des agents. Il ne touche pas non plus :
+**Exclu de toute auto-modification.** Le système ne modifie jamais de code : ni celui de son noyau, ni celui des agents. Il ne touche pas non plus :
 
 - aux schémas du journal, du grand livre et du protocole ;
 - aux commandes du profil, ratifiées en CP-0 ;
 - aux définitions des points de contrôle, à leurs régimes et à leurs planchers ;
 - aux politiques de sécurité : exclusions, motifs de secrets, fichiers protégés ;
 - aux méta-critères du second ordre : fenêtre de 10 décisions, exposition minimale de 3, marge de 15 points, repris d'Agent2Test (a2t/H18) ;
-- aux documents normatifs ;
-- aux invariants de sa constitution.
+- au seuil de bascule du stockage, fixé par l'humain (bin §7.2) ;
+- à la partie constitutionnelle de ses documents : invariants, points de contrôle et planchers, bornes des règles. Le `referentiel` n'y reporte que les valeurs ratifiées en CP-4.
 
 | # | Invariant |
 |---|---|
 | I1 | Cycle 7E : sept phases, dans l'ordre, aux échelles Système, Demande, Itération et Tâche ; l'E3 d'une échelle est la suite des cycles de l'échelle inférieure ; le couplage avec Agent2Test suit bin/I3. |
 | I2 | Périmètre : Agent2Dev réalise, dans le projet déclaré, les modifications qu'une demande appelle ; il ne rédige pas la demande ; toute action hors de ce projet est refusée. |
-| I3 | Écriture confinée : seul `depot` écrit, et seulement dans l'arbre de travail dédié de la demande ; jamais dans l'arbre du développeur, ni dans `.git`, ni hors de la racine ; ni poussée, ni fusion, ni réécriture d'historique, ni suppression de branche. |
+| I3 | Écriture confinée : dans le projet, seul `depot` écrit, et seulement dans l'arbre de travail dédié de la demande ; jamais dans l'arbre du développeur, ni dans `.git`, ni hors de la racine ; ni poussée, ni fusion, ni réécriture d'historique, ni suppression de branche. Dans les documents d'Agent2Dev, seul le `referentiel` écrit, et seulement la valeur d'une règle ratifiée en CP-4, sans commit. |
 | I4 | Le moteur ne produit que des données validées par schéma ; il n'écrit aucun fichier, n'exécute rien, ne fournit ni commande ni chemin hors de la carte ; toute modification passe par la vérification « avant / après » du `depot`. |
 | I5 | Pas de livraison sans preuve : une itération n'est « effective » qu'après commit, construction réussie et sonde positive ; la conformité d'une demande vient des verdicts d'Agent2Test sur l'oracle ratifié, ou de la décision humaine en mode solo, jamais de l'auto-évaluation d'Agent2Dev. |
 | I6 | Un verdict d'Agent2Test n'est jamais réécrit ni ignoré ; une contestation est consignée à côté et tranchée par Agent2Test ou par l'humain. |
@@ -718,7 +726,7 @@ flowchart LR
 | I14 | Origine : toute production du moteur porte le moteur, la fiche et sa version composée, l'empreinte du prompt et le ratificateur ; les commits portent la demande, l'itération et les critères. |
 | I15 | Oracle : les critères ne changent qu'en CP-1 ; un scénario ne change que par une révision qui garde ses critères couverts et ses résultats attendus, ou en CP-1 ; un test existant du projet n'est modifié ou supprimé que si une tâche du plan ratifié le prévoit ; un changeset de migration existant n'est jamais modifié ni supprimé. |
 
-La constitution d'Agent2Dev est extraite de ce document par le `referentiel` : tableaux du §5.2 et du présent §6.6, selon la convention documentaire du binôme (§9). Son empreinte est inscrite au grand livre à chaque version publiée par un humain. Au démarrage, un écart empêche Agent2Dev de démarrer (bin/I7).
+La constitution d'Agent2Dev est extraite de ce document par le `referentiel`, selon la convention documentaire du binôme (§9) : le tableau du §5.2, les invariants du présent §6.6, les noms et les bornes des règles. Les valeurs des règles n'en font pas partie. Son empreinte est inscrite au grand livre à chaque ratification. Si, au démarrage, l'humain a modifié la constitution, Agent2Dev ouvre CP-4 et applique la dernière constitution ratifiée jusqu'à la décision (bin/I7).
 
 ### 6.7 Où s'arrête l'observation de l'observation
 
@@ -785,6 +793,8 @@ En fin d'itération, les contrôles locaux couvrent la compilation complète du 
 
 ### 7.4 La livraison (option B)
 
+La livraison prend d'abord le verrou de l'instance. Si une autre demande le tient, elle attend, sans que cette attente compte dans sa durée (§6.6). Le verrou est rendu à la réception du rapport de campagne, d'un refus de campagne, ou à l'échec du déploiement (bin/D22).
+
 1. **Commit** sur la branche dédiée, avec ses pieds de page (H7).
 2. **Arrêt** de l'instance.
 3. **Restauration** de la base à l'instantané de référence : l'état de la base au commit de base. L'`exploitant` le reprend quand ce commit change (bin/AM-8).
@@ -807,6 +817,7 @@ sequenceDiagram
   participant A as back et front
   participant L as liaison
   participant T as Agent2Test
+  Note over O: verrou de l'instance obtenu
   O->>P: commit(itération n)
   P-->>O: commit, fichiers modifiés
   O->>X: arreter()
@@ -871,7 +882,7 @@ L'orchestrateur calcule la décision ; les budgets et les seuils sont ceux du §
 
 ### 8.1 Stockage
 
-Port de stockage du socle (binôme §7) : un fichier SQLite par agent sous `donnees/a2d/`, ou un dossier JSON.
+Port de stockage du noyau, selon la politique commune (binôme §7) : un dossier JSON par agent sous `donnees/a2d/`, remplacé par un fichier SQLite quand les données de l'agent dépassent le seuil de 250 Ko. `journal` et `memoire` franchissent ce seuil les premiers.
 
 | Fichier de l'agent | Contenu principal |
 |---|---|
@@ -901,7 +912,7 @@ Sur disque, chaque demande a son dossier `sortie/<demande>/` : `livrable.md`, `r
 
 ### 8.3 RAG sur le code
 
-- **Recherche.** Plein texte FTS5 (`unicode61 remove_diacritics 2`, classement `bm25`) sur des fragments par symbole, identifiants découpés. Similarité vectorielle en option, avec des plongements locaux (Ollama) et un cosinus calculé en JavaScript. Les classements sont fusionnés par rang réciproque, comme dans Agent2Test.
+- **Recherche.** Plein texte sur des fragments par symbole, identifiants découpés : FTS5 (`unicode61 remove_diacritics 2`, classement `bm25`) une fois `memoire` passée en SQLite, index BM25 en mémoire en dessous du seuil. Similarité vectorielle en option, avec des plongements locaux (Ollama) et un cosinus calculé en JavaScript. Les classements sont fusionnés par rang réciproque, comme dans Agent2Test.
 - **Graphe.** La recherche est complétée par le graphe de la carte (§7.1) et par la mémoire des demandes proches.
 - **Sans modèle de plongement,** le plein texte et le graphe suffisent.
 - **Avant injection** dans une consigne, les fragments sont filtrés par l'épinglage de la demande, bornés et masqués. Leurs identifiants sont journalisés : le prompt reste reproductible.
@@ -916,6 +927,55 @@ Sur disque, chaque demande a son dossier `sortie/<demande>/` : `livrable.md`, `r
 | arbre de travail | supprimé à la clôture ; la branche est conservée |
 | sorties de commandes | tronquées à 64 Ko par exécution |
 
+### 8.5 Carte du projet et profil d'application
+
+La carte est propre à Agent2Dev (bin/D13). Le `scanner` la tient à jour sur l'arbre de travail de chaque demande active, indexée par empreinte de fichier : un second passage sans fichier modifié ne réanalyse rien.
+
+| Domaine | Contenu de la carte |
+|---|---|
+| Back | modules de construction ; paquets et classes ; points d'API des contrôleurs (verbe, chemin) ; services, dépôts et entités, avec leurs tables ; DTO ; tests JUnit |
+| Front | routes, y compris celles chargées à la demande ; composants et gabarits ; services et leurs appels HTTP, appariés aux points d'API ; clés de traduction ; fichiers de test |
+| Migrations | changesets Liquibase ou scripts Flyway : identifiant, auteur, opérations |
+| Construction | outil (Maven, Gradle, npm), scripts, versions de Java et de Node déclarées |
+| Compose | services, images, ports, volumes |
+
+- **Back** : lecture tolérante des sources Java (annotations, signatures, imports), sans compilateur.
+- **Front** : compilateur TypeScript et Angular du projet lui-même, sans dépendance ajoutée. C'est le choix d'Agent2Test (a2t/D15), réalisé ici dans le code d'Agent2Dev.
+- **Clés** : fichiers, routes et points d'API s'écrivent dans les clés communes du binôme (bin §8.2), pour que les deux lectures de l'application se rejoignent.
+- **Recouvrements** : la carte sait quels fichiers chaque demande active a modifiés. `recouvrements(fichiers)` signale ceux qu'une autre demande a déjà touchés (T7).
+
+**Profil d'application.** Un profil par projet cible, propriété d'Agent2Dev. La carte le propose ; l'humain le ratifie en CP-0 ; aucun agent ne l'écrit ensuite. Agent2Test n'en reçoit que l'instance, par `livraison.effective` (bin §8.3).
+
+| Section | Contenu |
+|---|---|
+| `projet` | racine, branche de base, exclusions (fichiers de secrets, fichiers protégés) |
+| `back`, `front`, `base` | outils, commandes de compilation, de tests, de construction ; outil de migration ; commandes d'instantané et de restauration |
+| `instance` | mode (conteneurs ou processus), projet Compose, ports, URL, sondes de santé, démarrage, arrêt |
+
+Les commandes s'écrivent en vecteurs d'arguments, sans shell, avec leur répertoire et leur délai (bin/D14) :
+
+```json
+{
+  "instance": {
+    "mode": "conteneurs",
+    "projetCompose": "a2d-instance",
+    "ports": { "back": 18080, "front": 14200, "base": 15432 },
+    "sante": { "back": "http://localhost:18080/actuator/health", "front": "http://localhost:14200/" },
+    "commandes": {
+      "demarrer": { "argv": ["docker", "compose", "-p", "a2d-instance", "up", "-d", "--build"], "cwd": ".", "delaiS": 900 },
+      "arreter": { "argv": ["docker", "compose", "-p", "a2d-instance", "down"], "cwd": ".", "delaiS": 120 }
+    }
+  },
+  "back": {
+    "outil": "maven",
+    "commandes": {
+      "compiler": { "argv": ["./mvnw", "-q", "-DskipTests", "compile"], "cwd": "back", "delaiS": 600 },
+      "tester": { "argv": ["./mvnw", "-q", "test"], "cwd": "back", "delaiS": 1200 }
+    }
+  }
+}
+```
+
 ---
 
 ## 9. Sécurité
@@ -927,11 +987,12 @@ Sur disque, chaque demande a son dossier `sortie/<demande>/` : `livrable.md`, `r
 | Écriture hors périmètre | `depot` seul écrivain, arbre dédié, chemins confinés ; fichiers protégés : secrets, `.git`, CI (I3) |
 | Destruction de données | instantané avant tout démarrage ; migration destructive en `presenter` ; base de l'instance distincte de celle du développeur |
 | Fuite de secrets vers le moteur | fichiers de secrets exclus ; valeurs masquées (`password`, `secret`, `token`, clés) ; plafond de contexte (I11, I12) |
+| Code du projet envoyé à un moteur hébergé | contexte borné et masqué ; autorisation de la mission (bin/H16) ; profil `souverain` en repli (bin/T7) |
 | Commande arbitraire | commandes du profil ratifié seulement, en vecteurs d'arguments, sans shell, avec délai (I13) |
 | Historique git altéré | ni poussée, ni force, ni rebase, ni suppression de branche ; commits sur la branche dédiée seulement (I3) |
 | Usurpation entre têtes | liaison sur `127.0.0.1` ; jeton porteur partagé (fichier 0600) ; schéma du protocole validé ; version vérifiée |
 | Exposition des interfaces | écoute sur `127.0.0.1` ; jeton pour le MCP HTTP ; contrôle de l'en-tête `Origin` |
-| Chaîne d'approvisionnement | aucune dépendance d'exécution : modules intégrés de Node seulement |
+| Chaîne d'approvisionnement | aucune dépendance d'exécution : modules intégrés de Node seulement ; Gemini CLI, outil externe, à une version épinglée (bin/D18) |
 
 ---
 
@@ -973,14 +1034,15 @@ Sur disque, chaque demande a son dossier `sortie/<demande>/` : `livrable.md`, `r
   - Node 24, 22.13 au minimum ;
   - git, avec `git worktree` ;
   - Docker et Compose v2 ;
-  - les chaînes de construction du projet : JDK et Maven ou Gradle, ou leurs enveloppes `mvnw` et `gradlew` ; Node et npm pour le front.
+  - les chaînes de construction du projet : JDK et Maven ou Gradle, ou leurs enveloppes `mvnw` et `gradlew` ; Node et npm pour le front ;
+  - Gemini CLI, connecté une première fois avec la licence Gemini Code Assist : ses identifiants mis en cache servent ensuite au mode sans tête.
 - **Instance** : en conteneurs, recommandé (T1), sous le projet Compose `a2d-instance`, ou en processus, selon le profil.
-- **Ports** : 4600 (tableau de bord), 4601 (MCP), 4602 (liaison) ; ceux de l'instance viennent du profil (binôme §10).
+- **Ports** : 4600 (tableau de bord), 4601 (MCP), 4602 (liaison) ; ceux de l'instance viennent du profil (§8.5, binôme §10).
 - **Fichiers** :
   - `donnees/a2d/` : un fichier par agent ;
   - `sortie/` : les livrables ;
-  - `config/` : moteurs et régimes, écrits par l'humain seul ;
-  - `binome/profils/<projet>.json` : profil d'application partagé ;
+  - `config/` : moteurs, régimes et seuil de bascule du stockage, écrits par l'humain seul ;
+  - `config/profils/<projet>.json` : profil d'application, ratifié en CP-0 ;
   - `donnees/binome/jeton` : jeton de liaison.
 
 ---
@@ -1005,11 +1067,13 @@ Les décisions du binôme (bin/D1 à bin/D19) s'appliquent. Celles-ci sont propr
 | D12 | Diagnostic avant correction ; contestation argumentée plutôt que contournement | Garde anti-Goodhart : on corrige la cause, ou l'on conteste le verdict, jamais le test. |
 | D13 | Le plan de tests est une projection déterministe, par la `liaison`, du cahier et des scénarios, au format de l'annexe A d'Agent2Test ; la sélection reste à Agent2Test | Pas de redondance avec le stratège d'Agent2Test. |
 | D14 | Scénarios en étapes numérotées ou en Gherkin, produits par une seule fiche | Réponse du 27 septembre, sans dédoubler la scénarisation. |
-| D15 | Port moteur à cinq adaptateurs ; moteur choisi par fiche | Multi-LLM, autonomie (bin/T6) et souveraineté. |
+| D15 | Port moteur à cinq adaptateurs ; `gemini-cli` par défaut ; moteur choisi par fiche | Autonomie avec le moteur de la mission (bin/D21) ; multi-LLM ; repli local du profil `souverain` (bin/T7). |
 | D16 | Serveur MCP pour l'IDE, en HTTP et stdio ; gouvernance refusée sur ce canal | Même montage qu'Agent2Test (a2t/D12, a2t/D13) ; séparation des pouvoirs (I10). |
 | D17 | Premier et second ordres séparés : l'`observant` d'`agents-modif` est scindé en `observateur` et `reflexif` | Distinction stricte demandée, vérifiable par le sens des dépendances (a2t/D9). |
 | D18 | Référentiel épinglé par demande | Des règles qui évoluent ne changent jamais une demande en cours. |
 | D19 | Garde statique sur les modifications : appels système, réseau, écritures, chaîne de construction, suppressions, migrations destructives | Le code écrit par le moteur s'exécute à la construction : on le signale avant (T1). |
+| D20 | Plusieurs demandes actives, trois par défaut ; un verrou sur l'instance, de la livraison au rapport ; recouvrements de fichiers signalés en CP-2 | Pipeline retenu pour le binôme (bin/D22) ; les branches parallèles se fusionnent hors du système, leur recouvrement se voit avant (T7). |
+| D21 | Carte du projet et profil d'application propres à Agent2Dev (§8.5), écrits dans les clés communes du binôme | Indépendance des têtes (bin/D13) : aucune bibliothèque partagée, des clés qui se rejoignent. |
 
 ---
 
@@ -1017,27 +1081,27 @@ Les décisions du binôme (bin/D1 à bin/D19) s'appliquent. Celles-ci sont propr
 
 | agents-modif | Agent2Dev | Ce qui change |
 |---|---|---|
-| `bus` | `bus` du socle | contrats déclarés ; contexte `echelle` et `phase` |
-| `Agent` | `Cellule7E` du socle | chaque message traité comme un cycle 7E |
+| `bus` | `bus` du noyau | contrats déclarés ; contexte `echelle` et `phase` |
+| `Agent` | `Cellule7E` du noyau | chaque message traité comme un cycle 7E |
 | `AgentGenerique` et quatre fiches | `generique` et sept fiches versionnées | trois fiches nouvelles : `scenarios`, `plan-realisation`, `diagnostic` ; avertissements typés ; versions composées |
-| `depot` : explorer, verifier, appliquer sur une copie | `scanner`, `analyste-code`, `depot` | exploration lexicale remplacée par la cartographie et le RAG ; application dans l'arbre dédié ; commit |
+| `depot` : explorer, verifier, appliquer sur une copie | `scanner`, `analyste-code`, `depot` | exploration lexicale remplacée par la carte du projet et le RAG ; application dans l'arbre dédié ; commit |
 | — | `exploitant` | option B : construction, migrations, démarrage, sonde, instantanés |
-| `orchestrateur` et `ordonnanceur` | `orchestrateur` | un seul `Cycle7E` récursif ; boucle de convergence ; régimes |
+| `orchestrateur` et `ordonnanceur` | `orchestrateur` | un seul `Cycle7E` récursif ; demandes actives et verrou de l'instance ; boucle de convergence ; régimes |
 | `observant` | `observateur` (O1) et `reflexif` (O2) | séparation stricte des deux ordres |
 | `apprenant` | `apprenant` | leçons indexées par moteur ; ratification en CP-4 seulement |
-| — | `referentiel` | versions, épinglage par demande, grand livre, modèle de soi |
-| `journal`, JSONL par jour | `journal` | chaîné, au format commun, avec échelle et phase |
+| — | `referentiel` | versions, épinglage par demande, grand livre, modèle de soi, report des valeurs ratifiées |
+| `journal`, JSONL par jour | `journal` | chaîné, au format commun, avec échelle et phase ; JSON, puis SQLite au-delà du seuil |
 | `tableau-de-bord` | `tableau-de-bord` | vue binôme, régimes, arrêt d'urgence, gouvernance |
 | — | `mcp` | pilotage et mode accompagné depuis l'IDE |
 | — | `liaison` | dialogue avec Agent2Test |
 | — | `memoire` | RAG hybride sur le code et les demandes |
-| moteurs `simulation` et `claude` | port moteur du socle | adaptateurs `compatible-openai`, `anthropic`, `gemini-cli`, `externe` |
+| moteurs `simulation` et `claude` | port moteur du noyau | adaptateurs `gemini-cli` (défaut), `externe`, `compatible-openai`, `anthropic`, `simulation` |
 | `validationAuto` (`AUTO=1`) | régimes de contrôle | `auto` réservé à la simulation |
 | `livrable.md`, `resultat.json` | livrable de demande | scénarios, plan, itérations, verdicts ; traçabilité critère → tâches → modifications → verdicts |
 
 Chemin de migration :
 
-1. Le `socle/` reçoit le bus, le validateur, les utilitaires de texte et les moteurs d'`agents-modif`, généralisés.
+1. Le noyau d'Agent2Dev, `agent2dev/noyau/`, reçoit le bus, le validateur, les utilitaires de texte et les moteurs d'`agents-modif`, généralisés et rendus conformes aux spécifications du binôme ; ses tests jouent les vecteurs de conformité de `binome/vecteurs/`.
 2. `agent2dev/` reprend l'agent générique, l'`apprenant`, le `depot` et le tableau de bord, et ajoute les autres modules.
 3. Les quatre fiches deviennent les versions 1.0.0 de leurs successeurs, sans mention de projet.
 4. `agents-modif/` reste intact jusqu'à la recette (étape 8), puis est retiré.
