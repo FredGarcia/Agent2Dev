@@ -84,6 +84,7 @@ Le 4 octobre, l'humain a ratifié le registre de l'étape 1 (§8) et le couplage
 | 12 | Entre les têtes, une seule enveloppe : `binome-7e/1`. | La livraison effective devient une `livraison`, le rapport de campagne un `verdict`, ses anomalies et leurs reproductions vont dans ses échecs. La ligne de journal et la convention documentaire communes restent normatives dans chaque tête (`01-architecture.md` §4, D4). |
 | 13 | La file des demandes et le verrou de l'instance, tenus jusque-là à l'échelle Système d'Agent2Dev, passent à n8n. | Agent2Dev demande le verrou à n8n avant chaque déploiement ; n8n l'attribue dans l'ordre d'arrivée et le reprend au rapport de campagne, à un refus ou à un échec (H4, D22). |
 | 14 | Un dépôt cible n'a besoin que de `binome.yaml` ; sans `7e-instance.yaml`, le binôme n'y conduit pas de cycle 7E et n'y traite que des demandes. | En mode binôme, une demande entre par une issue « à faire » du Gitea local, que n8n met en file ; Agent2Dev en rédige les US et les critères numérotés, soumis à a2d/CP-1, puis le plan donne les tâches. |
+| 15 | À la mission, a2d/CP-1 reste à son plancher, `differe` (D20). | La boucle avance sur un oracle pas encore ratifié ; seule la clôture « conforme » attend sa ratification (I2). La spécification n8n faisait valider les critères avant le plan, soit a2d/CP-1 en `presenter` : `plan.propose` part ici dès la production de l'oracle. Une personne peut toujours configurer le point en `presenter`. |
 
 ## 4. Hypothèses
 
