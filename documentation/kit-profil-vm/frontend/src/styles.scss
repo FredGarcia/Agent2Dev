@@ -1,0 +1,16 @@
+:root {
+  --primary: #000091; /* Palette DSFR */
+  --bg-color: #f6f6f6;
+  --text-color: #161616;
+  --border-color: #e5e5e5;
+  --success: #18753c;
+  --error: #ce0500;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}

@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "revue": "2026-10-01",
+  "principe": "Seuils fixés et révisés par la boucle (EX.2, EQ.2). Valeur null : en calibrage, la mesure est enregistrée sans verdict.",
+  "seuils": {
+    "demarrage_s":         { "valeur": 10,   "critere": "9.1",  "source": "lecture du critère : quelques secondes" },
+    "arret_s":             { "valeur": 30,   "critere": "9.2",  "source": "stop_grace_period de compose.yaml" },
+    "delai_commit_prod_h": { "valeur": 24,   "critere": "10.2", "source": "lecture du critère : en heures, pas en semaines" },
+    "taux_5xx":            { "valeur": null, "critere": "EX.2", "source": "à calibrer sur les premiers cycles" },
+    "latence_p95_ms":      { "valeur": null, "critere": "EX.2", "source": "à calibrer sur les premiers cycles" },
+    "fenetre_min":         { "valeur": 15,   "critere": "EX.2", "source": "fenêtre d'observation des indicateurs" },
+    "memoire_max_jours":   { "valeur": 7,    "critere": "EV.1", "source": "âge maximal du dernier cycle enregistré" },
+    "revue_max_jours":     { "valeur": 30,   "critere": "EQ.2", "source": "délai maximal entre deux revues des seuils et des règles" }
+  }
+}

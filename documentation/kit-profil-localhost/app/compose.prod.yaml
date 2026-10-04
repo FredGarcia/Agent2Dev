@@ -1,0 +1,18 @@
+# Prod locale : uniquement des images publiées par la CI, aucun build (5.1).
+# Lancée par scripts/deploy.sh, qui fixe le tag sur le commit déployé (5.2).
+
+services:
+  web:
+    deploy:
+      replicas: 2                # 8.1 : plusieurs processus web dès la prod locale
+
+  proxy:
+    networks:
+      default: {}
+      contrats:
+        aliases:
+          - ${IMAGE_NAME:?}-api  # FR.1 : le service exposé, attachable par un autre projet
+
+networks:
+  contrats:
+    external: true               # créé une fois par scripts/7e-init.sh

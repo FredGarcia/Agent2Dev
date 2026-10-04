@@ -1,0 +1,12 @@
+# Ce qui n'entre jamais dans l'image : historique, config réelle, état, outillage d'exploitation
+.git
+.gitea
+.7e
+.env
+.env.dev
+.env.prod
+compose*.yaml
+scripts
+7e
+**/node_modules
+**/__pycache__

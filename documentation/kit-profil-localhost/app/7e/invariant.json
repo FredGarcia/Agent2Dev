@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "principe": "Ce que la boucle ne modifie jamais (IN.1). Protégé dans Gitea : motifs de fichiers protégés de la branche main.",
+  "elements": [
+    { "chemin": "7e/AXIOME.md",       "raison": "l'axiome générateur, point fixe de la récursion" },
+    { "chemin": "7e/invariant.json",  "raison": "la liste elle-même" },
+    { "chemin": "contrats/",          "raison": "les contrats d'interface exposés aux autres rangs (FR.1)" }
+  ],
+  "modifiable_par_la_boucle": ["7e/seuils.json", "7e/regles.json"]
+}

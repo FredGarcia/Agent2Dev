@@ -1,0 +1,30 @@
+#!/bin/sh
+# Types de processus de l'application, à la manière d'un Procfile (8.2).
+# Une seule image ; le type est l'argument :
+#   web | worker | scheduler | health | migrate | migrations-check | <commande quelconque>
+# Exemple Django. Équivalents Spring Boot et Laravel : section « Équivalences » du profil.
+set -eu
+: "${PORT:?PORT absent de la config (7.2)}"
+
+case "${1:-web}" in
+  web)
+    # gunicorn : serveur embarqué (7.1), arrêt propre sur SIGTERM (9.2),
+    # journaux JSON sur stdout via config/gunicorn.conf.py (11.1, 11.2).
+    if [ "${WEB_RELOAD:-0}" = 1 ]; then set -- --reload; else set --; fi
+    exec gunicorn config.wsgi --config config/gunicorn.conf.py \
+      --bind "0.0.0.0:${PORT}" --graceful-timeout 20 "$@" ;;
+  worker)
+    # task_acks_late + task_reject_on_worker_lost dans la config Celery (9.3).
+    exec celery -A config worker --loglevel "${LOG_LEVEL:-info}" ;;
+  scheduler)
+    # Fichier d'état de beat en tmpfs : le système de fichiers est en lecture seule (6.2).
+    exec celery -A config beat --loglevel "${LOG_LEVEL:-info}" --schedule /tmp/celerybeat-schedule ;;
+  health)
+    exec python -c "import os, urllib.request; urllib.request.urlopen(f'http://127.0.0.1:{os.environ[\"PORT\"]}/health', timeout=2)" ;;
+  migrate)
+    exec python manage.py migrate --noinput ;;
+  migrations-check)
+    exec python manage.py migrate --check ;;
+  *)
+    exec "$@" ;;
+esac

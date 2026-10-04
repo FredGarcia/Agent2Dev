@@ -1,0 +1,6 @@
+# Contexte de construction de Dockerfile.recette : le strict nécessaire.
+# Le code est recopié au démarrage depuis le montage /depot (recette/entree.sh).
+*
+!package.json
+!package-lock.json
+!recette/entree.sh

@@ -1,0 +1,84 @@
+version: "1.0"
+meta:
+  name: "gitmanager-core"
+  rank: "N"
+  axiom_invariant: "IN.1"
+  purpose: "Autotelic self-monitoring & adaptive deployment"
+
+# ------------------------------------------------------------------------------
+# 1. ONTOLOGIE 7E (Cycle courant)
+# ------------------------------------------------------------------------------
+cycle_7e:
+  elements:
+    codebase: "git@github.com:org/gitmanager.git"
+    commit_sha: "a1b2c3d4e5f"
+    dependencies_locked: true
+  space:
+    environment: "production"
+    backing_services:
+      database: "redis://redis:6379/0"
+      events: "kafka:9092"
+  state:
+    status: "HEALTHY"
+    version_tag: "v1.4.2"
+    active_instances: 3
+  expression:
+    entrypoint_port: 8080
+    log_format: "json_stdout"
+  evolution:
+    cycle_index: 42
+    last_adaptation: "scaled_up_concurrency"
+    learning_memory_ref: "redis://redis:6379/1"
+  environment_effect:
+    metrics_endpoint: "http://localhost:9090/metrics"
+
+# ------------------------------------------------------------------------------
+# 2. CONTRAT 12-FACTOR APP (Vérifications automatiques)
+# ------------------------------------------------------------------------------
+twelve_factor_compliance:
+  1_codebase: { single_repo: true, shared_deps_as_libs: true }
+  2_dependencies: { explicit_declaration: true, isolated_vendor: true }
+  3_config: { read_from_env: true, strict_no_secrets_in_code: true }
+  4_backing_services: { dynamic_attachment: true }
+  5_build_release_run: { strict_separation: true, immutable_releases: true }
+  6_processes: { stateless: true, shared_nothing: true }
+  7_port_binding: { self_contained: true, port_env_var: "PORT" }
+  8_concurrency: { process_formation: { web: 3, worker: 2 } }
+  9_disposability: { fast_startup_seconds: 5, graceful_shutdown_signal: "SIGTERM" }
+  10_dev_prod_parity: { backing_services_identical: true }
+  11_logs: { stream_to_stdout: true }
+  12_admin_processes: { run_in_release_env: true }
+
+# ------------------------------------------------------------------------------
+# 3. BOUCLE CYBERNÉTIQUE DE SECOND ORDRE (Sidecar Agentique)
+# ------------------------------------------------------------------------------
+cybernetic_sidecar:
+  image: "meta-agent-observer:latest"
+  docker_socket: "/var/run/docker.sock"
+  evaluation_interval_seconds: 10
+  
+  agents:
+    perception:
+      sources: ["docker_events", "stdout_logs", "prometheus_metrics"]
+    meta_observer:
+      observe_the_observer: true
+      thresholds:
+        max_restart_frequency: 3
+        latency_p95_ms: 250
+    architect:
+      allowed_actions:
+        - "scale_service"
+        - "restart_container"
+        - "rollback_release"
+        - "update_env_config"
+
+  # Matrice de régulation (EQ.1 & EQ.2)
+  feedback_loops:
+    - signal: "LATENCY_EXCEEDED"
+      condition: "p95 > 250ms"
+      action: "scale_up"
+      target: "processes.web"
+    - signal: "UNHEALTHY_REPEATED"
+      condition: "restarts > 3 in 5m"
+      action: "rollback"
+      target: "cycle_7e.state.version_tag"

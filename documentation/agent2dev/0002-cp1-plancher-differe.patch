@@ -1,0 +1,48 @@
+From de9daf0d40dd6271f689e07edc2ea4804b497385 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 4 Oct 2026 18:21:11 +0200
+Subject: [PATCH 2/2] =?UTF-8?q?a2d/CP-1=20=C3=A0=20la=20mission=20:=20le?=
+ =?UTF-8?q?=20plancher,=20differe=20(D20)?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Arbitrage du 4 octobre : la boucle avance et seule la clôture
+« conforme » attend l'oracle. Cadrage du binôme §3.2, point 15 ;
+architecture du binôme §5.2.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01MC2Pzo3gAnjXYUJLxZ6AdR
+---
+ 01-architectureBinome.md | 2 +-
+ 01-cadrageBinome.md      | 1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/01-architectureBinome.md b/01-architectureBinome.md
+index 32d056f..5248379 100644
+--- a/01-architectureBinome.md
++++ b/01-architectureBinome.md
+@@ -386,7 +386,7 @@ Chaque tête définit ses points de contrôle, leurs planchers et leurs régimes
+ - **Différables, plancher `differe`** : a2d/CP-1 (cadrage et oracle), a2d/CP-2 (conception), a2d/CP-3 (livraison), a2d/CP-6 (clôture), a2t/CP-1 (sélection), a2t/CP-2 (mise en place), a2t/CP-3 (verdicts).
+ - **Cas forcés** : quel que soit le régime, un avertissement bloquant, une modification de la chaîne de construction ou des dépendances, une suppression de fichier ou une migration destructive imposent `presenter` (a2d/I8).
+ - **Définitions** : Agent2Dev `01-architecture.md` §5.2 ; Agent2Test `01-architecture.md` §5.2, amendé par AM-6.
+-- **Points du binôme** : ils s'ajoutent à ceux des têtes. Quand ils portent la même décision — valider l'oracle (a2d/CP-1), arbitrer (a2d/CP-5), ouvrir la session SSO (a2t/CP-0) —, le point de la tête s'applique, avec son régime : son plancher par défaut, plus strict si une personne le configure ainsi. Par exemple, a2d/CP-1 en `presenter` fait valider les critères avant le plan, comme dans la spécification n8n. S'y ajoutent trois points bloquants : ratifier une PR qui touche un fichier soumis à ratification, fusionner à la mission, auditer à chaque clôture (§6.4). Les escalades de n8n vont, elles aussi, à une personne. À un point bloquant, la tâche passe en attente d'une personne ; seule sa décision la fait repartir.
++- **Points du binôme** : ils s'ajoutent à ceux des têtes. Quand ils portent la même décision — valider l'oracle (a2d/CP-1), arbitrer (a2d/CP-5), ouvrir la session SSO (a2t/CP-0) —, le point de la tête s'applique, avec son régime : son plancher par défaut, plus strict si une personne le configure ainsi. À la mission, a2d/CP-1 reste à son plancher, `differe` (cadrage du binôme, §3.2, point 15) ; la spécification n8n, qui fait valider les critères avant le plan, supposait `presenter`, régime qu'une personne peut toujours configurer. S'y ajoutent trois points bloquants : ratifier une PR qui touche un fichier soumis à ratification, fusionner à la mission, auditer à chaque clôture (§6.4). Les escalades de n8n vont, elles aussi, à une personne. À un point bloquant, la tâche passe en attente d'une personne ; seule sa décision la fait repartir.
+ 
+ Comme a2d/CP-1 est en régime `differe` par défaut, la boucle avance sur un oracle pas encore ratifié ; mais aucune demande n'est close « conforme » tant que l'humain ne l'a pas ratifié (I2).
+ 
+diff --git a/01-cadrageBinome.md b/01-cadrageBinome.md
+index 268ced0..6119fdc 100644
+--- a/01-cadrageBinome.md
++++ b/01-cadrageBinome.md
+@@ -84,6 +84,7 @@ Le 4 octobre, l'humain a ratifié le registre de l'étape 1 (§8) et le couplage
+ | 12 | Entre les têtes, une seule enveloppe : `binome-7e/1`. | La livraison effective devient une `livraison`, le rapport de campagne un `verdict`, ses anomalies et leurs reproductions vont dans ses échecs. La ligne de journal et la convention documentaire communes restent normatives dans chaque tête (`01-architecture.md` §4, D4). |
+ | 13 | La file des demandes et le verrou de l'instance, tenus jusque-là à l'échelle Système d'Agent2Dev, passent à n8n. | Agent2Dev demande le verrou à n8n avant chaque déploiement ; n8n l'attribue dans l'ordre d'arrivée et le reprend au rapport de campagne, à un refus ou à un échec (H4, D22). |
+ | 14 | Un dépôt cible n'a besoin que de `binome.yaml` ; sans `7e-instance.yaml`, le binôme n'y conduit pas de cycle 7E et n'y traite que des demandes. | En mode binôme, une demande entre par une issue « à faire » du Gitea local, que n8n met en file ; Agent2Dev en rédige les US et les critères numérotés, soumis à a2d/CP-1, puis le plan donne les tâches. |
++| 15 | À la mission, a2d/CP-1 reste à son plancher, `differe` (D20). | La boucle avance sur un oracle pas encore ratifié ; seule la clôture « conforme » attend sa ratification (I2). La spécification n8n faisait valider les critères avant le plan, soit a2d/CP-1 en `presenter` : `plan.propose` part ici dès la production de l'oracle. Une personne peut toujours configurer le point en `presenter`. |
+ 
+ ## 4. Hypothèses
+ 
+-- 
+2.43.0
+

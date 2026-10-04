@@ -1,0 +1,66 @@
+# Engendrer (5.1, 5.2) : une seule chaîne construit, vérifie et publie chaque release.
+# Le déploiement reste un acte local et tracé : scripts/deploy.sh <commit> (10.3).
+# Variables du dépôt (Paramètres > Actions > Variables) :
+#   REGISTRY=localhost:3000  GITLEAKS_VERSION=8.30.1  TRIVY_IMAGE=aquasec/trivy:0.75.0
+#   TEST_COMMAND=<commande de test lancée dans l'image dev>   REGISTRY_USER=<compte du jeton>
+# Secret : REGISTRY_TOKEN (jeton Gitea, portée write:package)
+name: release
+
+on:
+  push:
+    branches: [main]             # la branche « cycles » (mémoire) ne déclenche rien
+
+jobs:
+  release:
+    runs-on: ubuntu-latest       # runner-images : client docker inclus, démon de l'hôte monté
+    env:
+      REGISTRY: ${{ vars.REGISTRY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0         # tout l'historique : le scan de secrets le parcourt (3.2)
+
+      - name: Nommer la release (5.2)
+        run: |
+          image="$(echo "$REGISTRY/${{ github.repository }}" | tr '[:upper:]' '[:lower:]')"
+          echo "IMAGE=$image:${{ github.sha }}" >> "$GITHUB_ENV"
+
+      - name: Refuser d'écraser une release publiée (5.2)
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: token ${{ secrets.REGISTRY_TOKEN }}" \
+            "${{ github.server_url }}/api/v1/packages/${{ github.repository_owner }}/container/${{ github.event.repository.name }}/${{ github.sha }}")
+          if [ "$code" = 200 ]; then
+            echo "release ${{ github.sha }} déjà publiée : une release ne change plus" >&2
+            exit 1
+          fi
+
+      - name: Aucun secret dans l'historique (3.2)
+        run: |
+          v="${{ vars.GITLEAKS_VERSION }}"
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v$v/gitleaks_${v}_linux_x64.tar.gz" \
+            | tar -xz -C /usr/local/bin gitleaks
+          gitleaks git --no-banner --redact --log-opts=--all .
+
+      - name: Construire depuis le seul dépôt (2.2, 5.1)
+        run: |
+          docker build --pull \
+            --build-arg REVISION=${{ github.sha }} \
+            --label org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }} \
+            -t "$IMAGE" .
+
+      - name: Tester dans l'image
+        run: |
+          [ -n "${{ vars.TEST_COMMAND }}" ] || { echo "variable TEST_COMMAND absente" >&2; exit 1; }
+          docker build --target dev -t "$IMAGE-dev" .
+          docker run --rm --entrypoint sh "$IMAGE-dev" -c "${{ vars.TEST_COMMAND }}"
+          docker image rm "$IMAGE-dev"
+
+      - name: Aucun secret dans l'image (3.2)
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "${{ vars.TRIVY_IMAGE }}" \
+            image --scanners secret --exit-code 1 --quiet "$IMAGE"
+
+      - name: Publier la release (5.2)
+        run: |
+          echo "${{ secrets.REGISTRY_TOKEN }}" | docker login "$REGISTRY" -u "${{ vars.REGISTRY_USER }}" --password-stdin
+          docker push "$IMAGE"

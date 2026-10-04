@@ -1,0 +1,185 @@
+%%{init: {"theme": "neutral", "flowchart": {"htmlLabels": true, "wrappingWidth": 420, "nodeSpacing": 28, "rankSpacing": 34}}}%%
+flowchart TB
+
+  %% ---------------------------------------------------------------------------
+  %% Modèle exécutif 12 facteurs x 7E : vue d'ensemble détaillée du méta-projet
+  %% Compagnon du doc « Modèle exécutif 12 facteurs x 7E » et de la spec
+  %% modele-executif-12f-7e.yaml, 2026-10-01
+  %% ---------------------------------------------------------------------------
+  %% Lecture
+  %%   Cadre extérieur  le méta-projet, rang racine : il porte le modèle,
+  %%                    l'exécute d'abord sur lui-même (cycle 0) et recueille
+  %%                    les journaux de tous les rangs.
+  %%   Boucle méta      en bas, à la racine : l'axiome s'exprime en modèle ;
+  %%                    modèle → cycle 0 → journaux → observation du modèle →
+  %%                    révision de structure (EQ.2), jamais de l'axiome (IN.1).
+  %%   Rangs (orange)   N-1 ce que le projet consomme, N un projet qui exécute
+  %%                    le modèle, N+1 ce qui le consomme. Chaque rang est la
+  %%                    même cellule : les Éléments dans l'Espace engendrent
+  %%                    un État d'Expression Évolutif, que la boucle referme.
+  %%   Liens orange     bouclage d'échelle : ce qu'un rang exprime devient
+  %%                    Élément ou Espace du rang suivant ; chaque projet
+  %%                    épingle le modèle publié et renvoie son journal au
+  %%                    méta-projet.
+  %%   Rang N           détaillé : une bande par terme (12 facteurs, 27
+  %%                    critères) et le cycle 7E avec le porteur de chaque
+  %%                    phase ; les phases 4, 5 et 7 forment la boucle de
+  %%                    second ordre (8 critères hors 12 facteurs).
+  %%   Suffixe          « → EX », « → EV », « → EQ » marque les 8 critères des
+  %%                    12 facteurs dont dépend directement une phase de la
+  %%                    boucle : un écart sur l'un d'eux se traite en premier.
+  %%   Pointillés       ce que le système donne à la boucle.
+  %%   Trait épais      la finalité oriente la boucle, qui se referme sur le
+  %%                    système lui-même.
+  %% ---------------------------------------------------------------------------
+
+  subgraph META["MÉTA-PROJET · rang racine : il porte le modèle, l'exécute d'abord sur lui-même et recueille les journaux de tous les rangs"]
+    direction TB
+
+    FIN["FINALITÉ<br/>Aucune consigne externe :<br/>la boucle fixe et révise ses seuils<br/>Viabilité, pas conformité :<br/>sortir du cycle plus capable de boucler"]
+
+    subgraph BM["BOUCLE DU MODÈLE · rang méta"]
+      direction LR
+      AX["AXIOME 7E, invariant<br/>Les Éléments dans l'Espace Engendrent<br/>un État d'Expression Évolutif<br/>de l'Environnement<br/>Même organisation à chaque rang<br/>IN.1 La boucle ne le modifie jamais"]
+      MOD["MODÈLE EXÉCUTIF<br/>spec YAML versionnée :<br/>35 critères résolus en contrôles,<br/>cycle 7E, contrats"]
+      C0["CYCLE 0 · amorçage<br/>le méta-projet exécute<br/>le modèle sur son propre dépôt ;<br/>aucune version publiée avant"]
+      JOUR["JOURNAUX DE CYCLE<br/>une entrée par cycle et par projet,<br/>jamais réécrite une fois close :<br/>la mémoire du méta-projet"]
+      OBS["OBSERVATION DU MODÈLE<br/>critères sans objet ou non discriminants,<br/>contrôles muets, écarts persistants"]
+    end
+
+    subgraph RINF["RANG N-1 · ce que le projet consomme"]
+      C_EE["Les Éléments dans l'Espace<br/>son dépôt, ses dépendances, sa config"]
+      C_ENG["Engendrent<br/>son build, sa release"]
+      C_ETAT["un État d'Expression Évolutif<br/>bibliothèque versionnée, service exposé"]
+    end
+
+    subgraph RN["RANG N · un projet qui exécute le modèle : la même cellule, détaillée"]
+
+      subgraph SYS["SYSTÈME : 12 facteurs dans les 7 termes, 27 critères"]
+
+        subgraph Z1["Les Éléments dans l'Espace"]
+          subgraph T_ELEM["Éléments"]
+            F1["1 Codebase<br/>1.1 Un seul dépôt par application → EV<br/>1.2 Code commun en bibliothèque"]
+            F2["2 Dépendances<br/>2.1 Dépendances verrouillées<br/>2.2 Build sans outil préinstallé"]
+          end
+          subgraph T_ESP["Espace"]
+            F3["3 Config<br/>3.1 Config dans l'environnement<br/>3.2 Aucun secret dans le dépôt"]
+            F4["4 Services externes<br/>4.1 Service désigné par la config<br/>4.2 Local ou distant, même code"]
+          end
+        end
+
+        subgraph T_ENG["Engendrent"]
+          F5["5 Build, release, run<br/>5.1 Trois étapes séparées<br/>5.2 Release identifiée, immuable → EV<br/>5.3 Retour arrière par redéploiement → EQ"]
+          F12["12 Processus d'admin<br/>12.1 Tâches depuis la release<br/>12.2 Aucune intervention manuelle"]
+        end
+
+        subgraph Z2["un État d'Expression Évolutif de l'Environnement"]
+          subgraph T_ETAT["État"]
+            F6["6 Processus sans état<br/>6.1 Aucun état local entre requêtes<br/>6.2 Persistance en service attaché"]
+          end
+          subgraph T_EXPR["Expression"]
+            F7["7 Port binding<br/>7.1 Serveur embarqué, port exposé<br/>7.2 Port venu de la config"]
+            F11["11 Logs<br/>11.1 Logs sur stdout et stderr → EX<br/>11.2 Flux d'événements horodatés → EX"]
+          end
+          subgraph T_EVOL["Évolutif"]
+            F8["8 Concurrence<br/>8.1 Montée en charge par processus → EQ<br/>8.2 Un type de processus par charge"]
+            F9["9 Jetabilité<br/>9.1 Démarrage en quelques secondes<br/>9.2 Arrêt propre sur SIGTERM → EQ<br/>9.3 Arrêt brutal sans perte → EQ"]
+          end
+          subgraph T_ENV["Environnement"]
+            F10["10 Parité dev/prod<br/>10.1 Mêmes services et versions<br/>10.2 En production en heures<br/>10.3 Qui code déploie et exploite"]
+          end
+        end
+
+      end
+
+      subgraph CYC["CYCLE 7E : boucle de second ordre en 4, 5 et 7"]
+        P_EVAL["1 Évaluer · résolveur<br/>vérifie modèle et manifeste,<br/>identifie la release"]
+        P_ELAB["2 Élaborer · résolveur, puis une personne<br/>ordonne les écarts"]
+        P_EXEC["3 Exécuter · pipeline du projet<br/>outillé par 5, 6, 8, 9"]
+        P_EXAM["4 Examiner · résolveur<br/>se mesure à ses propres seuils<br/>EX.1 Flux collecté et consultable<br/>EX.2 Indicateurs, seuils explicites<br/>prérequis : 11.1, 11.2"]
+        P_EVOL["5 Évoluer · résolveur<br/>progrès jugé d'un cycle à l'autre<br/>EV.1 Mémoire des cycles<br/>EV.2 Régression liée à sa release<br/>prérequis : 1.1, 5.2"]
+        P_EMET["6 Émettre · résolveur<br/>écrit l'entrée de journal<br/>outillé par 7, 11"]
+        P_EQUI["7 Équilibrer · résolveur, puis une personne<br/>corrige la structure, puis les critères<br/>EQ.1 Hors seuil : correction définie<br/>EQ.2 Critères eux-mêmes révisés<br/>prérequis : 5.3, 8.1, 9.2, 9.3"]
+      end
+
+    end
+
+    subgraph RSUP["RANG N+1 · ce qui consomme le projet"]
+      S_EE["Les Éléments dans l'Espace<br/>son code, sa config,<br/>le rang N en service attaché"]
+      S_ENG["Engendrent<br/>son build, sa release"]
+      S_ETAT["un État d'Expression Évolutif<br/>son propre service, exposé à son tour"]
+    end
+
+  end
+
+  %% Grille de placement (liens invisibles) : une bande par terme, le rang N+1
+  %% sous le rang N. À laisser en tête des liens, leur ordre fixe la mise en page.
+  F1 ~~~ F3 ~~~ F5 ~~~ F6 ~~~ F11 ~~~ F8 ~~~ F10
+  F2 ~~~ F4 ~~~ F12 ~~~ F6
+  F6 ~~~ F7 ~~~ F9 ~~~ F10
+  F10 ~~~ S_EE
+
+  %% 1. Rang méta : le modèle s'exécute d'abord sur le méta-projet ; les
+  %%    journaux nourrissent l'observation du modèle, qui en révise la
+  %%    structure. Les liens entrants et sortants visent le cadre BM, pas ses
+  %%    nœuds, pour que la boucle garde sa disposition propre.
+  MOD -->|"exécuté d'abord<br/>sur lui-même"| C0
+  C0 -->|"journal du cycle 0"| JOUR
+  JOUR -->|"observés"| OBS
+  OBS ==>|"révise la structure (EQ.2),<br/>jamais l'organisation (IN.1)"| MOD
+  AX -->|"s'exprime en"| MOD
+  FIN ==>|"oriente la boucle"| P_EVAL
+
+  %% 2. Lecture de l'axiome, de haut en bas
+  T_ESP --> T_ENG
+  T_ENG --> T_ETAT
+
+  %% 3. Le cycle
+  P_EVAL --> P_ELAB --> P_EXEC --> P_EXAM --> P_EVOL --> P_EMET --> P_EQUI
+
+  %% 4. Ce que le système donne à la boucle
+  T_EXPR -.->|"s'observe"| P_EXAM
+  T_ENG -.->|"se souvient"| P_EVOL
+  T_EVOL -.->|"se corrige"| P_EQUI
+
+  %% 5. Fermeture : le système devient ses propres Éléments
+  P_EQUI ==>|"se révise"| F1
+
+  %% 6. La même cellule aux rangs voisins, avec la même boucle
+  C_EE --> C_ENG --> C_ETAT
+  C_ETAT -.->|"même boucle"| C_EE
+  S_EE --> S_ENG --> S_ETAT
+  S_ETAT -.->|"même boucle"| S_EE
+
+  %% 7. Bouclage d'échelle (fractale) : ce qu'un rang exprime devient Élément
+  %%    ou Espace du rang suivant. Ces cinq liens restent les derniers du
+  %%    fichier : linkStyle les désigne par leur numéro d'ordre, à partir de 0.
+  C_ETAT ==>|"la bibliothèque devient<br/>Élément (2)"| F2
+  C_ETAT ==>|"le service devient<br/>Espace (4)"| F4
+  F7 ==>|"FR.1 : le service exposé (7)<br/>devient Espace (4)"| S_EE
+  P_EVAL ==>|"épingle la version publiée :<br/>le modèle devient Élément du projet (2.1)"| BM
+  P_EMET ==>|"son journal de cycle devient<br/>Élément du méta-projet"| BM
+
+  classDef invariant fill:#fdf3d0,stroke:#a67c00,stroke-width:2px,color:#2b2200
+  classDef finalite fill:#e6f4ea,stroke:#2e7d32,stroke-width:2px,color:#10310f
+  classDef meta fill:#ffffff,stroke:#c2410c,stroke-width:2px,color:#1c1c1a
+  classDef facteur fill:#f4f4f2,stroke:#8a8a86,color:#1c1c1a
+  classDef premier fill:#ffffff,stroke:#8a8a86,color:#1c1c1a
+  classDef second fill:#dbeafe,stroke:#1d4ed8,stroke-width:2px,color:#0b1f4d
+
+  class AX invariant
+  class FIN finalite
+  class MOD,C0,JOUR,OBS meta
+  class F1,F2,F3,F4,F5,F6,F7,F8,F9,F10,F11,F12 facteur
+  class C_EE,C_ENG,C_ETAT,S_EE,S_ENG,S_ETAT facteur
+  class P_EVAL,P_ELAB,P_EXEC,P_EMET premier
+  class P_EXAM,P_EVOL,P_EQUI second
+
+  %% Fractale : les rangs portent le même cadre, les liens de bouclage
+  %% d'échelle la même couleur.
+  style META fill:#fffaf5,stroke:#c2410c,stroke-width:3px
+  style BM fill:#fff7ed,stroke:#c2410c,stroke-width:2px
+  style RINF fill:#fff7ed,stroke:#c2410c,stroke-width:2px
+  style RN fill:#fff7ed,stroke:#c2410c,stroke-width:2px
+  style RSUP fill:#fff7ed,stroke:#c2410c,stroke-width:2px
+  linkStyle 37,38,39,40,41 stroke:#c2410c,stroke-width:3px

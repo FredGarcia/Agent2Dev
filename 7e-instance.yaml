@@ -1,0 +1,108 @@
+# Manifeste du méta-projet : première instance du modèle qu'il porte.
+# Cycle 0 (amorçage) : le méta-projet exécute le modèle sur son propre dépôt.
+
+instance:
+  id: meta-12f-7e
+  nom: Méta-projet 12 facteurs × 7E
+  niveau: meta
+
+modele:
+  ref: modele-executif-12f-7e
+  version: 0.5.0
+
+journal: journal
+
+# Au rang méta, la release est une version du modèle et la production sa
+# publication aux projets : une version publiée est un tag v<x>.<y>.<z>. Elle
+# n'atteint la production qu'à sa validation finale par une personne (bouton
+# « Validation finale » de l'interface, rangée en base) : 10.2 mesure le délai
+# du commit à cette validation. Sans base joignable ni validation, la release
+# déployée retombe sur le dernier tag publié, et la mesure de 10.2 est en
+# erreur (date illisible), jamais conforme.
+# Aucun environnement n'a de compose : le méta-projet ne fait tourner aucun service.
+environnements:
+  dev:
+    fichiers: []
+    release_deployee: git rev-parse --short=12 HEAD
+    deploye_le: git log -1 --format=%ct
+  production:
+    fichiers: []
+    release_deployee: node recette/lancer.mjs validation --release 2>/dev/null || git describe --tags --abbrev=0 --match 'v[0-9]*'
+    deploye_le: node recette/lancer.mjs validation --date
+environnement_test: dev
+
+release:
+  variable: MODELE_7E_VERSION
+  precedente: git describe --tags --abbrev=0 --match 'v[0-9]*' HEAD^
+
+# Ce que le méta-projet expose : le modèle lui-même. Chaque projet en épingle
+# la version (modele.version) et le lit par la variable MODELE_7E.
+expose:
+  contrat: modele-executif-12f-7e.yaml
+  variable_consommateur: MODELE_7E
+
+# La tâche ponctuelle du méta-projet : un cycle, lancé depuis l'image de la release.
+admin:
+  taches:
+    - nom: cycle
+      commande: docker run --rm -v "$PWD:/depot" resolveur7e:<release> cycle --clore
+
+# Le résolveur de la release : celui de l'image (RESOLVEUR_7E), sinon celui du dépôt.
+# Avec MODELE_7E_VERSION, le test de fumée valide la release qu'elle nomme, dans
+# un clone : son résolveur, son modèle, son manifeste. C'est le retour arrière
+# d'un projet sans compose (5.3) : la release antérieure, puis celle du cycle.
+tests:
+  fumee: |
+    if [ -z "${MODELE_7E_VERSION:-}" ]; then
+      node "${RESOLVEUR_7E:-resolveur7e.mjs}" valider
+    else
+      (
+        set -e
+        d=$(mktemp -d)   # dans le temp du cycle : conservé et cité au journal
+        modules=$(dirname "$(readlink -f "${RESOLVEUR_7E:-resolveur7e.mjs}")")/node_modules
+        git clone --quiet --shared "$PWD" "$d/r"
+        git -C "$d/r" checkout --quiet --detach "$MODELE_7E_VERSION"
+        ln -s "$modules" "$d/r/node_modules"
+        cd "$d/r"
+        DEPOT_7E="$PWD" MODELE_7E="$PWD/modele-executif-12f-7e.yaml" MANIFESTE_7E="$PWD/7e-instance.yaml" node resolveur7e.mjs valider
+      )
+    fi
+
+observabilite:
+  requete_test: 'node "${RESOLVEUR_7E:-resolveur7e.mjs}" historique'
+
+# Seuils fixés par le méta-projet (EX.2), révisés par lui (EQ.2).
+# Les quatre derniers servent l'observation du modèle (rang méta).
+seuils:
+  delai_commit_production_h: { valeur: 24, unite: h }
+  periode_revue_cycles: { valeur: 3, unite: cycles }
+  sans_objet_frequent: { valeur: 0.5, unite: part des projets }
+  non_discriminant: { valeur: 3, unite: cycles }
+  controle_muet: { valeur: 0, unite: exécutions en erreur tolérées }
+  ecart_persistant: { valeur: 3, unite: cycles }
+
+retroaction:
+  - { indicateur: delai_commit_production_h, correction: ticket }
+  - { indicateur: sans_objet_frequent, correction: ticket }
+  - { indicateur: non_discriminant, correction: ticket }
+  - { indicateur: controle_muet, correction: ticket }
+  - { indicateur: ecart_persistant, correction: ticket }
+
+invariants: [axiome, cycle, contrats, mutabilite.organisation]
+
+# Critères sans objet au rang méta, chacun justifié.
+sans_objet:
+  '4.2': aucun service attaché à basculer
+  '6.1': aucun processus ne sert de requêtes
+  '6.2': aucun processus long ; la seule donnée persistante, le journal, est versionnée dans le dépôt
+  '7.1': le méta-projet n'expose aucun service réseau, il publie un fichier versionné
+  '7.2': aucun port d'écoute
+  '8.1': aucun processus long ; le cycle est une tâche ponctuelle
+  '8.2': un seul type de charge, la tâche ponctuelle du cycle
+  '9.1': aucun processus long à démarrer
+  '9.2': aucun processus long à arrêter
+  '9.3': aucun processus long ni file de tâches ; l'entrée de journal n'est écrite qu'en fin de cycle
+  '12.2': aucune base de données ni serveur ; le journal versionné tient lieu de journal des exécutions
+
+# Critères à déclaration (1.2, 5.3, 10.3) : réponse et preuve à fournir par une personne.
+declarations: {}

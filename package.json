@@ -1,0 +1,27 @@
+{
+  "name": "meta-12f-7e",
+  "version": "0.5.0",
+  "description": "Modèle exécutif 12 facteurs × 7E : le modèle, son résolveur et le journal de ses cycles",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "resolveur7e": "resolveur7e.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test tests/test_*.mjs",
+    "recette": "node recette/lancer.mjs campagne",
+    "recette:migrer": "node recette/lancer.mjs migrer",
+    "recette:importer": "node recette/lancer.mjs importer",
+    "recette:exporter": "node recette/lancer.mjs exporter",
+    "interface": "node interface/serveur.mjs"
+  },
+  "dependencies": {
+    "yaml": "2.9.1"
+  },
+  "devDependencies": {
+    "pg": "8.23.1"
+  }
+}

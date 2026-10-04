@@ -1,0 +1,194 @@
+/* Interface de recette 12 facteurs × 7E : feuille de style unique.
+   Contrastes AA (texte ≥ 4,5:1), focus toujours visible, mise en page fluide
+   jusqu'à 320 px de large, mouvement réduit respecté, thème sombre suivi. */
+
+:root {
+  --fond: #ffffff;
+  --fond-doux: #f3f4f6;
+  --texte: #1a1a1a;
+  --texte-doux: #4a4f57;
+  --bord: #8a9099;
+  --lien: #0b4fb3;
+  --lien-visite: #5a2d91;
+  --focus: #b35c00;
+  --succes: #1e6b32;
+  --succes-fond: #e3f2e6;
+  --echec: #a1141c;
+  --echec-fond: #fbe6e7;
+  --erreur: #8a4b00;
+  --erreur-fond: #fdf0dc;
+  --neutre: #4a4f57;
+  --neutre-fond: #eceef1;
+  --rayon: 4px;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fond: #16181c;
+    --fond-doux: #22252b;
+    --texte: #eceef1;
+    --texte-doux: #b9bec7;
+    --bord: #6e7580;
+    --lien: #8fb8ff;
+    --lien-visite: #c7a6ff;
+    --focus: #ffb35c;
+    --succes: #8fdc9f;
+    --succes-fond: #1d3324;
+    --echec: #ff9ea3;
+    --echec-fond: #3d1f22;
+    --erreur: #ffc977;
+    --erreur-fond: #3a2c14;
+    --neutre: #c4c9d1;
+    --neutre-fond: #2b2f36;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { font-size: 100%; }
+body {
+  margin: 0;
+  background: var(--fond);
+  color: var(--texte);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  line-height: 1.5;
+}
+
+a { color: var(--lien); text-underline-offset: 0.15em; }
+a:visited { color: var(--lien-visite); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+main:focus { outline: none; }
+
+.evitement {
+  position: absolute; left: -9999px; top: 0;
+  background: var(--fond); color: var(--lien); padding: 0.5rem 1rem; z-index: 10;
+}
+.evitement:focus { left: 1rem; top: 1rem; }
+
+.entete {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 2rem;
+  padding: 0.75rem 1.5rem; border-bottom: 1px solid var(--bord); background: var(--fond-doux);
+}
+.marque { margin: 0; font-weight: 700; font-size: 1.1rem; }
+.marque a { color: var(--texte); text-decoration: none; }
+.entete ul { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; list-style: none; margin: 0; padding: 0; }
+.entete a[aria-current="page"] { font-weight: 700; text-decoration-thickness: 3px; }
+
+main { max-width: 78rem; margin: 0 auto; padding: 1rem 1.5rem 3rem; }
+h1 { font-size: 1.75rem; line-height: 1.25; margin: 0.5rem 0 1rem; }
+h2 { font-size: 1.3rem; margin: 2rem 0 0.75rem; }
+h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+p, ul, ol, dl { max-width: 72ch; }
+
+.ariane ol { display: flex; flex-wrap: wrap; list-style: none; padding: 0; margin: 0 0 0.5rem; font-size: 0.95rem; }
+.ariane li + li::before { content: "›"; margin: 0 0.5rem; color: var(--texte-doux); }
+
+.pied { border-top: 1px solid var(--bord); padding: 1rem 1.5rem; color: var(--texte-doux); font-size: 0.9rem; }
+
+/* Tableaux */
+/* position: relative : les textes réservés aux lecteurs d'écran (absolus) restent dans la zone qui défile */
+.defilement { position: relative; overflow-x: auto; margin: 0.5rem 0 1.5rem; }
+table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+caption { text-align: left; font-weight: 700; padding: 0.25rem 0 0.5rem; }
+th, td { border-bottom: 1px solid var(--bord); padding: 0.4rem 0.6rem; text-align: left; vertical-align: top; }
+thead th { background: var(--fond-doux); border-bottom-width: 2px; }
+tbody th { font-weight: 400; }
+.nombre { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td code, td pre { font-size: 0.85rem; }
+pre { white-space: pre-wrap; word-break: break-word; margin: 0.25rem 0; background: var(--fond-doux); padding: 0.5rem; border-radius: var(--rayon); max-height: 32rem; overflow: auto; }
+code { font-family: ui-monospace, "Cascadia Code", "DejaVu Sans Mono", monospace; }
+
+/* Statuts : symbole + mot ; la couleur ne porte jamais seule l'information */
+.statut { display: inline-block; padding: 0 0.45rem; border-radius: var(--rayon); white-space: nowrap; font-weight: 600; border: 1px solid currentColor; }
+.statut-reussi, .statut-reussie, .statut-correction { color: var(--succes); background: var(--succes-fond); }
+.statut-echoue, .statut-echouee, .statut-regression { color: var(--echec); background: var(--echec-fond); }
+.statut-erreur, .statut-interrompue { color: var(--erreur); background: var(--erreur-fond); }
+.statut-omis, .statut-a_faire, .statut-en_cours, .statut-non_executee, .statut-changement,
+.statut-nouveau, .statut-disparu, .statut-identique, .statut-inconnu,
+.statut-en_attente, .statut-annulee, .statut-a_ratifier, .statut-autre_voie, .statut-ouverte, .statut-a_blanc { color: var(--neutre); background: var(--neutre-fond); }
+.statut-executee, .statut-ratifiee, .statut-actif, .statut-close, .statut-viable { color: var(--succes); background: var(--succes-fond); }
+.statut-bloquee { color: var(--erreur); background: var(--erreur-fond); }
+.statut-absent, .statut-non_viable { color: var(--echec); background: var(--echec-fond); }
+
+/* Fiches et chiffres clés */
+.fiche { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: 0.5rem 1.5rem; max-width: none; margin: 0.5rem 0 1.5rem; }
+.fiche div { border-left: 3px solid var(--bord); padding-left: 0.6rem; }
+.fiche dt { color: var(--texte-doux); font-size: 0.9rem; }
+.fiche dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+
+/* Messages */
+.message, .alerte, .erreurs { border-radius: var(--rayon); padding: 0.75rem 1rem; margin: 0.5rem 0 1rem; border-left: 5px solid; }
+.message { border-color: var(--succes); background: var(--succes-fond); }
+.alerte, .erreurs { border-color: var(--echec); background: var(--echec-fond); }
+.erreurs h2 { font-size: 1.1rem; margin: 0 0 0.5rem; }
+.erreurs ul { margin: 0; }
+.vide { color: var(--texte-doux); font-style: italic; }
+.suite { color: var(--texte-doux); }
+.visuellement-cache {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* Formulaires */
+form.filtres { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; align-items: flex-end; margin: 0.5rem 0 1rem; }
+form.filtres .champ { margin: 0; min-width: 0; max-width: 100%; }
+.champ { margin: 0 0 1.1rem; max-width: 60rem; }
+.champ label { display: block; font-weight: 600; margin-bottom: 0.2rem; }
+.requis { font-weight: 400; color: var(--texte-doux); }
+.aide { margin: 0 0 0.3rem; color: var(--texte-doux); font-size: 0.92rem; }
+.erreur { margin: 0 0 0.3rem; color: var(--echec); font-weight: 600; }
+.champ-erreur input, .champ-erreur textarea, .champ-erreur select { border-color: var(--echec); border-width: 2px; }
+input[type="text"], input[type="search"], input[type="number"], select, textarea {
+  font: inherit; color: var(--texte); background: var(--fond);
+  border: 1px solid var(--bord); border-radius: var(--rayon); padding: 0.4rem 0.5rem; min-height: 2.5rem;
+}
+input[type="text"], textarea { width: 100%; }
+select { max-width: 100%; }
+textarea.code { font-family: ui-monospace, "Cascadia Code", "DejaVu Sans Mono", monospace; font-size: 0.92rem; }
+fieldset { border: 1px solid var(--bord); border-radius: var(--rayon); margin: 0 0 1.1rem; padding: 0.5rem 1rem; max-width: 60rem; }
+legend { font-weight: 600; padding: 0 0.3rem; }
+.choix { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; }
+.choix label { font-weight: 400; display: inline-flex; gap: 0.4rem; align-items: center; }
+button, .bouton {
+  font: inherit; font-weight: 600; cursor: pointer; display: inline-block; text-decoration: none;
+  border: 2px solid var(--lien); border-radius: var(--rayon); padding: 0.4rem 0.9rem; min-height: 2.5rem;
+  background: var(--lien); color: var(--fond);
+}
+button.secondaire, .bouton.secondaire { background: transparent; color: var(--lien); }
+button.danger { background: var(--echec); border-color: var(--echec); color: var(--fond); }
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+.actions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin: 1rem 0; }
+form.en-ligne { display: inline; }
+.operations-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.operations-actions button { min-height: 2rem; padding: 0.15rem 0.5rem; font-size: 0.9rem; }
+
+.pagination ul { display: flex; gap: 1rem; list-style: none; padding: 0; }
+.resultat-essai { border: 2px solid var(--bord); border-radius: var(--rayon); padding: 0.75rem 1rem; margin: 1rem 0; max-width: 60rem; }
+
+/* Pilotage : actions, cartes, machine à états */
+.notice { border-radius: var(--rayon); padding: 0.75rem 1rem; margin: 0.5rem 0 1rem; border-left: 5px solid var(--bord); background: var(--fond-doux); max-width: 72ch; }
+.notice.avertissement { border-color: var(--erreur); background: var(--erreur-fond); }
+.notice p { margin: 0.25rem 0; }
+.actions-pilotage { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: 1rem; margin: 0.5rem 0 1.5rem; }
+.carte { border: 1px solid var(--bord); border-radius: var(--rayon); padding: 0.75rem 1rem; background: var(--fond); }
+.carte h3 { margin-top: 0; }
+.carte form { margin: 0.5rem 0 0; }
+.carte .champ { margin-bottom: 0.6rem; }
+.carte p { margin: 0.3rem 0; }
+.etiquette { display: inline-block; font-size: 0.85rem; padding: 0 0.4rem; border: 1px solid var(--bord); border-radius: var(--rayon); color: var(--texte-doux); white-space: nowrap; }
+ol.etapes { padding-left: 1.5rem; }
+ol.etapes li { margin: 0.2rem 0; }
+/* La sortie d'une demande défile dans sa propre région, atteignable au clavier */
+.sortie { max-height: 40rem; overflow: auto; border-radius: var(--rayon); margin: 0.25rem 0 1rem; }
+.sortie pre { max-height: none; overflow: visible; margin: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
+
+@media (max-width: 40rem) {
+  main { padding: 0.75rem 1rem 2rem; }
+  .entete { padding: 0.75rem 1rem; }
+  h1 { font-size: 1.45rem; }
+}

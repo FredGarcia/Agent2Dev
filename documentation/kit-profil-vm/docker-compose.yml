@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  # --- COUCHE POSTGRESQL (Mémoire Structurée 7E) ---
+  postgres:
+    image: postgres:16-alpine
+    container_name: gitmanager-postgres
+    environment:
+      POSTGRES_DB: gitmanager
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: always
+
+  # --- COUCHE REDIS (Cache / File d'attente éphémère - Optionnel) ---
+  redis:
+    image: redis:7-alpine
+    container_name: gitmanager-redis
+    ports:
+      - "6379:6379"
+
+  # --- COUCHE D'EXÉCUTION & BACKEND NODE.JS (Sidecar + API) ---
+  node_backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: gitmanager-node-backend
+    ports:
+      - "3000:3000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./meta-system-7e.yaml:/etc/meta/system.yaml:ro
+    environment:
+      - PORT=3000
+      - DOCKER_SOCKET=/var/run/docker.sock
+      - META_CONFIG_PATH=/etc/meta/system.yaml
+      - DATABASE_URL=postgres://postgres:postgres_password@postgres:5432/gitmanager
+    depends_on:
+      - postgres
+      - redis
+    restart: always
+
+  # --- COUCHE FRONTEND ANGULAR (Cortex Visuel S6) ---
+  angular_frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.angular
+    container_name: gitmanager-angular-ui
+    ports:
+      - "80:80"
+    depends_on:
+      - node_backend
+
+volumes:
+  pgdata:

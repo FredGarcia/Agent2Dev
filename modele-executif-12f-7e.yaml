@@ -1,0 +1,1353 @@
+# ═════════════════════════════════════════════════════════════════════════════
+#  MODÈLE EXÉCUTIF 12 FACTEURS × 7E
+#  Méta-projet autotélique et fractal : spécification déclarative
+# ═════════════════════════════════════════════════════════════════════════════
+#  Version 0.5.0 (essai) · 2026-10-04 · Fred · dérivée du protocole d'exécution du doc
+#  Compagnon du doc « Modèle exécutif 12 facteurs × 7E » : mêmes 35 critères,
+#  mêmes énoncés, mêmes preuves attendues.
+#
+#  Ce fichier n'est pas une grille à lire : c'est le modèle que chaque projet
+#  exécute, à commencer par le méta-projet qui le porte. Chaque critère se
+#  résout en contrôles exécutables à partir du manifeste de l'instance
+#  (7e-instance.yaml). Il dérive du protocole d'exécution du doc ; le
+#  résolveur du méta-projet (resolveur7e.mjs, sous Node.js) l'exécute.
+#
+#  Sections
+#    modele, axiome          identité et point fixe
+#    finalite                pourquoi la boucle tourne, et quand un cycle réussit
+#    mutabilite              ce que la boucle peut modifier, et à quel rang (IN.1)
+#    echelle, synthese       notation 0 à 3, agrégation, écarts, ordre de traitement
+#    chemins                 expressions de chemins partagées par les contrôles
+#    types_de_controle       comment un contrôle se résout en commande
+#    termes, second_ordre    les 35 critères et leurs contrôles
+#    boucle                  Examiner, Évoluer, Équilibrer : critères, prérequis, blocage
+#    cycle                   les 7 phases : entrée, actions, sortie, garde
+#    fractale                rangs et bouclage d'échelle
+#    contrats                manifeste d'instance, journal de cycle
+#    observation_du_modele   le second ordre au rang méta : le modèle s'observe
+#    amorcage, versionnage   cycle 0 sur le méta-projet, publication, versions
+#
+#  Conventions
+#    Clés sans accents, textes en français.
+#    {{ … }}  résolu avant exécution :
+#             {{ manifeste.<champ> }}         champ du manifeste d'instance
+#             {{ item }}, {{ item.<champ> }}  élément courant d'un pour_chaque
+#             {{ compose.<env> }}             options compose d'un environnement
+#                                             (-f …, --env-file …)
+#             {{ compose.test }}              idem pour environnement_test,
+#                                             plus le projet éphémère -p 7e-<cycle>
+#             {{ compose.depot }}             idem, avec --env-file .env.example :
+#                                             la config du seul dépôt
+#             {{ cycle.id }}, {{ cycle.release }}
+#             {{ chemins.<nom> }}             expression de la section chemins,
+#                                             citée pour le shell
+#    ${…}     variable shell, laissée telle quelle.
+#    jq       « . » est l'entrée du contrôle ; $m est le manifeste d'instance ;
+#             $requis liste les indicateurs dont un seuil est exigé (EX.2) ;
+#             $contrat est la contrat_version du modèle exécuté.
+# ═════════════════════════════════════════════════════════════════════════════
+
+modele:
+  id: modele-executif-12f-7e
+  version: 0.5.0
+  statut: essai, dérivé du protocole d'exécution du doc
+  date: '2026-10-04'
+  auteur: Fred
+  nature: méta-projet autotélique et fractal
+  role: modèle exécutif des projets qui l'adoptent, à commencer par lui-même
+  compagnon: doc « Modèle exécutif 12 facteurs × 7E »
+
+axiome:
+  enonce: Les Éléments dans l'Espace Engendrent un État d'Expression Évolutif de l'Environnement
+  termes: [Éléments, Espace, Engendrent, État, Expression, Évolutif, Environnement]
+  lecture: '[Éléments × Espace] —Engendrent→ [État = Expression Évolutive de l''Environnement]'
+  statut: >-
+    Point fixe (eigenform) et organisation conservée du système ; il n'est
+    jamais parmi les éléments modifiables.
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  FINALITÉ : pourquoi la boucle tourne
+# ─────────────────────────────────────────────────────────────────────────────
+finalite:
+  these: >-
+    Le projet est sa propre fin : le système y est à la fois producteur et
+    produit. La conformité aux 12 facteurs n'est pas le but ; elle est le moyen
+    qui permet à la boucle Examiner → Évoluer → Équilibrer de tourner sur le
+    système lui-même.
+  arguments:
+    - id: A1
+      titre: Aucune consigne ne vient du dehors
+      texte: >-
+        Une boucle tournée vers un but externe (norme, client, échéance) se
+        règle sur l'écart à ce but. Ici, elle fixe ses propres seuils (EX.2) et
+        les révise (EQ.2).
+      effet: Les seuils appartiennent à l'instance (manifeste.seuils), jamais au modèle.
+    - id: A2
+      titre: L'invariant la borne
+      texte: >-
+        L'axiome est le point fixe : la boucle révise la structure (code,
+        config, seuils, critères), jamais l'organisation (IN.1). Sans lui, les
+        objectifs dérivent et la récursion ne converge pas.
+      effet: Voir mutabilite.
+    - id: A3
+      titre: La viabilité remplace la conformité
+      texte: >-
+        Un cycle réussit quand le système en sort plus capable de s'observer,
+        de se souvenir et de se corriger. Le score exprime cet état, il n'est
+        pas l'objectif.
+      effet: Voir viabilite.
+    - id: A4
+      titre: Autotélique ne veut pas dire autarcique
+      texte: >-
+        Le système se clôt sur ses opérations mais reste couplé à son
+        environnement : il consomme des services (4.1, 4.2) et en expose un que
+        d'autres consomment (FR.1).
+      effet: Voir fractale.bouclage.
+  viabilite:
+    criteres: [EX.1, EX.2, EV.1, EV.2, EQ.1, EQ.2]
+    regle: >-
+      Un cycle est viable si aucun de ces critères ne baisse par rapport au
+      cycle précédent ; il progresse s'il est viable et qu'au moins un monte.
+      Seuls comptent les critères notés dans les deux cycles : un critère sans
+      objet d'un côté ne baisse ni ne monte. Le niveau absolu des scores
+      n'entre pas dans ce jugement.
+    assertion: |   # jq sur le journal trié ; rend {viable, progresse}, ou null au premier cycle
+      ["EX.1", "EX.2", "EV.1", "EV.2", "EQ.1", "EQ.2"] as $k
+      | if length < 2 then null
+        else .[-2].scores as $a | .[-1].scores as $b
+          | [$k[] | select(($a[.].score | type) == "number" and ($b[.].score | type) == "number")
+              | $b[.].score - $a[.].score] as $d
+          | { viable: all($d[]; . >= 0),
+              progresse: (all($d[]; . >= 0) and any($d[]; . > 0)) }
+        end
+  regles:
+    - Un écart sur un prérequis de la boucle bloque la phase et se traite avant tous les autres (boucle.blocage).
+    - À effet égal, Équilibrer retient la correction réversible, celle qui laisse le plus de choix au cycle suivant (impératif de von Foerster).
+    - Le modèle est un Élément du système. Il se versionne, se révise (EQ.2) et s'exécute d'abord sur le méta-projet qui le porte (amorcage).
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  MUTABILITÉ : IN.1 au rang méta, la liste explicite exigée par le critère
+# ─────────────────────────────────────────────────────────────────────────────
+mutabilite:
+  organisation:
+    portee: jamais modifiée, à aucun rang, par aucune boucle ni aucune version
+    elements: [axiome, cycle.ordre, mutabilite.organisation]
+  contrats:
+    portee: >-
+      stables et hors de portée de la boucle ; ils ne changent que par une
+      version majeure, décidée hors cycle (avant 1.0.0, une version 0.x peut
+      en changer un : versionnage.contrat_version)
+    elements: [modele.id, modele.auteur, modele.nature, modele.role, modele.compagnon, finalite, echelle, synthese, contrats, fractale, amorcage, versionnage, mutabilite]
+  structure:
+    portee: révisée par EQ.2 au rang méta ; chaque révision publie une version mineure
+    elements: [modele.version, modele.date, modele.statut, chemins, types_de_controle, termes, second_ordre, boucle, cycle.phases, observation_du_modele]
+  local:
+    portee: révisé par chaque instance en Équilibrer, sans toucher au modèle
+    elements: [manifeste.seuils, manifeste.retroaction, code, config, déploiement]
+  recouvrement: en cas de recouvrement, la classe la plus stricte l'emporte (organisation, puis contrats, puis structure)
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  ÉCHELLE ET SYNTHÈSE
+# ─────────────────────────────────────────────────────────────────────────────
+echelle:
+  scores:
+    - { score: 0, nom: Absent, sens: "Le critère n'est pas respecté" }
+    - { score: 1, nom: Partiel, sens: "Respecté sur une partie du périmètre, ou sans preuve" }
+    - { score: 2, nom: Conforme, sens: "Respecté partout, preuve fournie" }
+    - { score: 3, nom: Automatisé, sens: "Conforme et vérifié automatiquement, en CI ou en supervision" }
+  sans_objet: >-
+    Un critère sans objet reste sans score et sort du calcul ; sa justification
+    est déclarée dans le manifeste (sans_objet).
+  agregation:   # des résultats de contrôle au score du critère, règles lues dans l'ordre
+    - si: critère déclaré sans objet, ou tous ses contrôles sans objet
+      score: null
+    - si: tous les contrôles conformes
+      score: 2
+      puis: >-
+        3 si le cycle s'exécute en CI (cycle.en_ci, détecté en Évaluer) et
+        qu'aucun de ses contrôles n'est une déclaration
+    - si: aucun contrôle conforme ou partiel, et aucun échec heuristique ni erreur
+      score: 0
+    - si: tous les autres cas (conformité partielle, échec heuristique, contrôle en erreur)
+      score: 1
+  constat: Chaque score porte un constat qui cite la preuve observée.
+
+synthese:
+  ecart: score inférieur ou égal à 1
+  moyenne: par terme, sur 3, critères sans objet exclus
+  ordre_de_traitement:
+    - les écarts sur les prérequis de la boucle (boucle.phases.*.prerequis), bloquants
+    - puis les autres écarts, terme à la moyenne la plus basse d'abord
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  CHEMINS ET TYPES DE CONTRÔLE
+# ─────────────────────────────────────────────────────────────────────────────
+chemins:   # expressions régulières sur les chemins versionnés (git ls-files)
+  code: &code '\.(java|kt|groovy|py|php|js|mjs|cjs|ts|vue|go|rb|cs|rs)$'
+  code_app: &code_app '\.(java|kt|groovy|py|php|js|mjs|cjs|ts|vue|go|rb|cs|rs|properties)$|(^|/)application[^/]*\.ya?ml$'
+  hors_tests: &hors_tests '(^|/)(tests?|spec|__tests__|docs?|fixtures?)/'
+  config: &config '\.(conf|ya?ml|toml|cfg|ini|properties)$|(^|/)\.env\.example$'
+  logging: &logging '\.(java|kt|groovy|py|php|js|mjs|cjs|ts|vue|go|rb|cs|rs|xml|properties|ya?ml|toml|ini|cfg|conf)$|(^|/)\.env\.example$'   # les extensions de code, puis la config
+  dockerfile: &dockerfile '(^|/)Dockerfile[^/]*$'
+  dockerfile_hors: &dockerfile_hors '(^|/)Dockerfile[^/]*\.(dockerignore|md|txt|j2|jinja2?|tpl|tmpl|template|orig|rej|bak|swp)$'   # à écarter de dockerfile : ce ne sont pas des Dockerfile
+  entrypoint: &entrypoint '(^|/)[^/]*entrypoint[^/]*\.sh$'
+  pipeline: &pipeline '^(\.gitea|\.github)/workflows/[^/]+\.ya?ml$|^\.gitlab-ci\.yml$'
+  verrous: &verrous '(^|/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|composer\.lock|poetry\.lock|uv\.lock|Pipfile\.lock|go\.sum|Cargo\.lock|Gemfile\.lock|pom\.xml|build\.gradle(\.kts)?|requirements[^/]*\.txt)$'
+  migrations: &migrations '(^|/)(db/migration|migrations|database/migrations)/'
+  env_example: &env_example '^\.env\.example$'
+
+types_de_controle:
+  outils:   # ce que le résolveur suppose installé
+    - Node.js 20 ou plus et le paquet yaml, pour le résolveur lui-même
+    - git
+    - docker compose v2.17 ou plus (config --format json, up --wait, --env-file répété)
+    - jq 1.6 ou plus
+    - yq v4 (mikefarah), pour lire les YAML en JSON
+    - grep et xargs GNU
+    - gitleaks v8 et trivy, pour 3.2
+  resultats: [conforme, partiel, absent, sans_objet, erreur]
+  exclusion_globale: '(^|/)(modele-executif-[^/]*|7e-instance)\.ya?ml$|^{{ manifeste.journal }}/'
+  regles:
+    requiert: >-
+      Un champ du manifeste dont dépend un contrôle, listé dans requiert ou
+      cité par un {{ manifeste.… }}, et non déclaré donne « partiel », avec le
+      constat « <champ> non déclaré ».
+    sans_objet_automatique: >-
+      Un contrôle qui n'a rien à examiner est sans_objet, avant toute autre
+      règle : liste vide d'un pour_chaque, motif attendu absent sans aucun
+      fichier à lire, contrôle compose sur un environnement sans fichiers
+      compose.
+    erreur: >-
+      Un contrôle qui n'a pas pu s'exécuter est en erreur, avec sa cause :
+      outil_absent (code retour 127, ou démon Docker injoignable pour un
+      scénario ou une mesure), hors_compose (scénario sur un
+      environnement sans fichiers compose) ou execution (délai dépassé, sortie
+      illisible). Un contrôle qui s'exécute et conclut par la négative est
+      absent.
+    pour_chaque: >-
+      pour_chaque est une expression jq sur le manifeste ; pour_chaque_image
+      parcourt les images de la config compose d'un environnement. Le contrôle
+      s'applique à chaque élément : tous conformes donne conforme, une partie
+      donne partiel, aucun donne absent. Une liste vide donne sans_objet, avant
+      toute autre règle.
+    heuristique: >-
+      heuristique: true marque une condition suffisante mais non nécessaire ;
+      son échec donne un constat à confirmer, jamais un 0 à lui seul.
+    insertion: >-
+      Une valeur du manifeste insérée dans une expression régulière y est
+      échappée.
+    exclusion: >-
+      Les fichiers du modèle et des manifestes, et le journal de l'instance
+      (manifeste.journal), sont exclus de tout motif (exclusion_globale) : le
+      modèle ne se détecte pas lui-même, et un constat cité au journal ne se
+      relit pas de cycle en cycle. Le chemin du journal y est inséré normalisé,
+      relatif à la racine du dépôt : ./journal, journal/ et journal//
+      désignent le même répertoire.
+    gardes: >-
+      Un contrôle propre aux projets avec compose, ou sans compose, le dit par
+      son pour_chaque. gardes.sans_compose rend l'environnement de test s'il
+      est déclaré dans environnements sans fichiers compose (valeur nulle,
+      fichiers absents, vides, liste ou table vide) ; gardes.avec_compose le
+      rend dans tous les autres cas, y compris s'il n'est pas déclaré : le
+      contrôle le signale alors. Les gardes décident comme le résolveur quand
+      il résout les options compose de l'environnement de test. Des deux
+      contrôles d'un critère, un seul s'applique ; l'autre est sans objet.
+    scenario: >-
+      Un scénario s'exécute dans un projet compose éphémère de
+      environnement_test (-p 7e-<cycle>), jamais en production, puis docker
+      compose down -v.
+    commandes_du_manifeste: >-
+      Une commande de test du manifeste (tests.fumee, tests.session,
+      tests.taches) s'insère dans un script entre parenthèses, la parenthèse
+      fermante seule sur sa ligne : un exit, un cd ou une liste && de la
+      commande ne touchent que son sous-shell, et le script juge son code de
+      retour.
+    delai: >-
+      À l'échéance du délai d'un contrôle, seul le processus lancé est tué
+      (SIGKILL) : le contrôle est en erreur (execution, délai dépassé).
+    fichiers_temporaires: >-
+      Les commandes, scénarios et mesures s'exécutent avec TMPDIR sur le
+      répertoire temp du cycle (contrats.journal.emplacement). Un contrôle n'y
+      efface rien : ce qu'il y laisse est conservé, et l'entrée de journal le
+      cite par un lien (fichiers), avec sa taille et son empreinte.
+  gardes:   # expressions pour_chaque sur le manifeste (regles.gardes)
+    avec_compose: &avec_compose >-
+      .environnement_test as $e
+      | (.environnements | if type == "object" then . else {} end) as $envs
+      | ($e != null and $e != "" and ($envs | has($e | tostring))) as $declare
+      | (if $declare then ($envs[$e | tostring] | if type == "object" then .fichiers else null end) else null end) as $f
+      | if $declare and ($f == null or $f == "" or $f == [] or $f == {}) then empty else {nom: $e} end
+    sans_compose: &sans_compose >-
+      .environnement_test as $e
+      | (.environnements | if type == "object" then . else {} end) as $envs
+      | ($e != null and $e != "" and ($envs | has($e | tostring))) as $declare
+      | (if $declare then ($envs[$e | tostring] | if type == "object" then .fichiers else null end) else null end) as $f
+      | if $declare and ($f == null or $f == "" or $f == [] or $f == {}) then {nom: $e} else empty end
+  types:
+    commande:
+      parametres:
+        commande: commande shell
+        attendu: code_retour_0 (défaut), sortie_non_vide ou sortie_vide
+      resolution: |
+        sortie=$(sh -c "$commande")
+    fichier:
+      parametres:
+        versionne: expression de chemin ; au moins un fichier versionné doit y correspondre
+        exclure: expression des chemins à écarter de versionne (facultatif)
+        ignore: chemin que Git doit ignorer
+        paires: pour chaque fichier versionné nommé si, un fichier de alors_un_de versionné dans le même répertoire
+      resolution: |
+        git ls-files | grep -E -e "$versionne" | grep -vEq -e "${exclure:-^$}"
+        git check-ignore -q -- "$ignore"
+    motif:
+      parametres:
+        motif: expression régulière étendue (grep -E)
+        fichiers: expression des chemins versionnés à lire
+        exclure: expression des chemins à écarter (facultatif)
+        attendu: absent ou present
+      resolution: |
+        git ls-files | grep -E -e "$fichiers" | grep -vE -e "${exclure:-^$}" \
+          | grep -vE -e "$exclusion_globale" \
+          | xargs -r -d '\n' grep -nEI -e "$motif" --
+        # absent : conforme si aucune ligne ; present : conforme si au moins une
+    compose:
+      parametres:
+        environnement: nom d'un environnement du manifeste, ou tous
+        assertion: >-
+          jq qui rend true, false ou null (sans objet) ; « . » est la config
+          compose résolue, ou la liste des {env, config} pour tous
+      resolution: |
+        docker compose {{ compose.<environnement> }} config --format json \
+          | jq --argjson m "$(yq -o=json 7e-instance.yaml)" "$assertion"
+    manifeste:
+      parametres:
+        assertion: jq qui rend true, false ou null ; « . » est le manifeste
+        variables: >-
+          $requis, les indicateurs dont un seuil est exigé : ceux des
+          contrôles metrique des critères applicables, plus periode_revue_cycles
+      resolution: |
+        yq -o=json 7e-instance.yaml | jq "$assertion"
+    journal:
+      parametres:
+        assertion: >-
+          jq qui rend true, false ou null (historique insuffisant) ; « . » est
+          la liste des entrées closes de l'instance, triées par cycle.fin ;
+          chacune porte _lus, ce que le résolveur trouve à côté d'elle :
+          demande (le ticket est présent sur ce poste) et fichiers (chaque
+          lien, présent ou non) ; le répertoire du cycle n'étant pas versionné,
+          _lus renseigne et ne prouve pas : la preuve est le lien et
+          l'empreinte inscrits dans l'entrée ; $contrat est la contrat_version
+          du modèle exécuté
+      resolution: |
+        # le répertoire de l'instance, puis, à côté de chaque entrée, son ticket et son temp :
+        # _lus.demande = test -f "$journal/$instance/<demande.lien>", _lus.fichiers = un test -e par lien
+        yq -o=json '.' "$journal/$instance"/*.yaml \
+          | jq -s 'map(select(.cycle.fin != null)) | sort_by(.cycle.fin)' \
+          | ajouter_lus \
+          | jq --argjson m "$(yq -o=json 7e-instance.yaml)" --arg contrat "$contrat" "$assertion"
+    scenario:
+      parametres:
+        script: script shell, arrêté au premier échec
+      resolution: |
+        # le piège rend le code du script, pas celui du nettoyage
+        trap 'c=$?; docker compose {{ compose.test }} down -v; exit $c' EXIT
+        set -e
+        # puis le script du contrôle
+    metrique:
+      parametres:
+        indicateur: clé dans manifeste.seuils
+        mesure: script qui imprime un nombre
+        comparaison: '<= ou >=, le côté du seuil où la valeur doit rester'
+        ordre_de_grandeur: repère tiré de l'énoncé, pas un seuil
+      resolution: |
+        valeur=$(sh -c "$mesure")
+        # comparée à manifeste.seuils.<indicateur>.valeur ; seuil absent :
+        # partiel, constat « seuil non déclaré (EX.2) »
+    declaration:
+      parametres:
+        question: attestation d'une personne, avec lien vers la preuve
+      resolution: aucune ; le critère reste plafonné à 2
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  LES SEPT TERMES : 12 facteurs, 27 critères
+# ─────────────────────────────────────────────────────────────────────────────
+termes:
+
+  - id: elements
+    nom: Éléments
+    sens: Ce qui compose le système est identifié et déclaré.
+    facteurs: [{ "n": 1, nom: Codebase }, { "n": 2, nom: Dépendances }]
+    criteres:
+
+      - id: '1.1'
+        facteur: 1
+        enonce: Un seul dépôt versionné par application, source de tous les déploiements
+        preuve_attendue: Dépôt unique ; commit ou tag déployé connu pour chaque environnement
+        controles:
+          - type: commande
+            commande: git rev-parse --is-inside-work-tree
+          - type: commande
+            pour_chaque: '(.environnements // {}) | to_entries[] | {nom: .key} + .value'
+            requiert: [environnements.<nom>.release_deployee]
+            commande: '{{ item.release_deployee }}'
+            attendu: sortie_non_vide
+
+      - id: '1.2'
+        facteur: 1
+        enonce: Le code commun à plusieurs applications est une bibliothèque versionnée, pas une copie
+        preuve_attendue: Dépendance déclarée vers la bibliothèque ; aucune duplication de code
+        controles:
+          - type: motif
+            pour_chaque: '.consomme[]? | select(.type == "bibliotheque")'
+            motif: '{{ item.nom }}'
+            fichiers: *verrous
+            attendu: present
+          - type: declaration
+            question: Le code partagé avec d'autres applications est-il consommé comme bibliothèque, sans copie ?
+
+      - id: '2.1'
+        facteur: 2
+        enonce: Toutes les dépendances sont déclarées et verrouillées
+        preuve_attendue: Manifeste et verrouillage des versions dans le dépôt (pom.xml, composer.lock, package-lock.json)
+        controles:
+          - type: fichier
+            paires:
+              - { si: package.json, alors_un_de: [package-lock.json, yarn.lock, pnpm-lock.yaml] }
+              - { si: composer.json, alors_un_de: [composer.lock] }
+              - { si: pyproject.toml, alors_un_de: [poetry.lock, uv.lock, pdm.lock] }
+              - { si: Pipfile, alors_un_de: [Pipfile.lock] }
+              - { si: go.mod, alors_un_de: [go.sum] }
+              - { si: Cargo.toml, alors_un_de: [Cargo.lock] }
+              - { si: Gemfile, alors_un_de: [Gemfile.lock] }
+          - type: motif
+            heuristique: true
+            motif: '<version>([^<]*(SNAPSHOT|LATEST|RELEASE)|[[(])'
+            fichiers: '(^|/)pom\.xml$'
+            attendu: absent
+          - type: motif
+            heuristique: true
+            motif: '^[A-Za-z0-9][A-Za-z0-9._-]*(\[[^]]*\])?[[:space:]]*($|[<>~!]=?|=[^=])'
+            fichiers: '(^|/)requirements[^/]*\.txt$'
+            attendu: absent
+
+      - id: '2.2'
+        facteur: 2
+        enonce: Le build ne dépend d'aucun outil préinstallé sur l'hôte
+        preuve_attendue: Build réussi dans un conteneur vierge, à partir du seul dépôt
+        controles:
+          - type: fichier
+            versionne: *dockerfile
+            exclure: *dockerfile_hors
+          - type: scenario
+            pour_chaque: *avec_compose
+            script: |
+              tmp=$(mktemp -d)
+              git clone --quiet --depth 1 "file://$(pwd)" "$tmp/src"
+              cd "$tmp/src"
+              docker compose {{ compose.depot }} build --no-cache --pull
+          - type: commande   # sans compose : chaque Dockerfile versionné, construit sans cache depuis un clone du seul dépôt
+            pour_chaque: *sans_compose
+            commande: |
+              docker info >/dev/null 2>&1 || { echo 'démon Docker injoignable' >&2; exit 127; }
+              set -e
+              tmp=$(mktemp -d)   # dans le temp du cycle, conservé et cité (regles.fichiers_temporaires)
+              git clone --quiet --depth 1 "file://$(pwd)" "$tmp/src"
+              cd "$tmp/src"
+              liste=$(git -c core.quotepath=off ls-files | grep -E -e {{ chemins.dockerfile }} | grep -vE -e {{ chemins.dockerfile_hors }} || true)
+              test -n "$liste" || { echo 'aucun Dockerfile versionné' >&2; exit 1; }
+              printf '%s\n' "$liste" | while IFS= read -r f; do
+                image=$(docker build --quiet --no-cache --pull -f "$f" "$(dirname "$f")")
+                [ -z "$image" ] || docker image rm "$image" >/dev/null
+              done
+              echo "construit sans cache depuis un clone : $(printf '%s\n' "$liste" | tr '\n' ' ')"
+
+  - id: espace
+    nom: Espace
+    sens: La config et les services externes situent les éléments sans modifier le code.
+    facteurs: [{ "n": 3, nom: Config }, { "n": 4, nom: Services externes }]
+    criteres:
+
+      - id: '3.1'
+        facteur: 3
+        enonce: Tout ce qui varie entre déploiements vient de variables d'environnement
+        preuve_attendue: Aucune URL, aucun identifiant ni option d'environnement en dur ; .env.example versionné, .env ignoré
+        controles:
+          - type: fichier
+            versionne: *env_example
+            ignore: .env
+          - type: motif
+            heuristique: true
+            motif: '(jdbc:[a-z0-9]+:|(mysql|postgres(ql)?|redis|amqp|mongodb(\+srv)?)://|https?://(localhost|127\.0\.0\.1))'
+            fichiers: *code
+            exclure: *hors_tests
+            attendu: absent
+
+      - id: '3.2'
+        facteur: 3
+        enonce: Le dépôt pourrait être rendu public sans exposer de secret
+        preuve_attendue: Scan de secrets sans alerte, historique Git compris ; aucun secret dans les images
+        controles:
+          - type: commande
+            commande: gitleaks detect --source . --redact --no-banner --log-opts="--all"
+          - type: commande
+            pour_chaque_image: production
+            commande: "trivy image --quiet --scanners secret --exit-code 1 '{{ item }}'"
+
+      - id: '4.1'
+        facteur: 4
+        enonce: Chaque service externe est désigné par une URL ou un identifiant de config
+        preuve_attendue: Base, cache, file de messages, SMTP et API tierces adressés par variables (DATABASE_URL, REDIS_URL)
+        controles:
+          - type: motif
+            pour_chaque: '.consomme[]? | select(.type == "service")'
+            requiert: [consomme.via]
+            motif: '^{{ item.via }}='
+            fichiers: *env_example
+            attendu: present
+
+      - id: '4.2'
+        facteur: 4
+        enonce: Remplacer un service local par un service distant ne touche pas au code
+        preuve_attendue: Bascule démontrée par simple changement de config
+        controles:
+          - type: scenario
+            requiert: [bascule.env_file, tests.fumee]
+            script: |
+              docker compose {{ compose.test }} --env-file {{ manifeste.bascule.env_file }} up -d --wait
+              ( {{ manifeste.tests.fumee }}
+              )
+              git diff --quiet HEAD
+
+  - id: engendrent
+    nom: Engendrent
+    sens: Une seule chaîne engendre tout ce qui s'exécute.
+    facteurs: [{ "n": 5, nom: 'Build, release, run' }, { "n": 12, nom: Processus d'admin }]
+    criteres:
+
+      - id: '5.1'
+        facteur: 5
+        enonce: Build, release et run sont trois étapes séparées
+        preuve_attendue: Le pipeline produit un artefact immuable ; aucun build au démarrage du conteneur
+        controles:
+          - type: fichier
+            versionne: *pipeline
+          - type: motif
+            heuristique: true
+            motif: 'docker (build|push)|buildx|build-push-action|kaniko'
+            fichiers: *pipeline
+            attendu: present
+          - type: motif
+            motif: '^[[:space:]]*(CMD|ENTRYPOINT)\b.*(npm (run )?build|yarn build|mvn |gradle |composer install|pip install|go build|cargo build)'
+            fichiers: *dockerfile
+            exclure: *dockerfile_hors
+            attendu: absent
+          - type: motif
+            heuristique: true
+            motif: '(npm (run )?build|yarn build|mvn |gradle |composer install|pip install|go build|cargo build)'
+            fichiers: *entrypoint
+            attendu: absent
+
+      - id: '5.2'
+        facteur: 5
+        enonce: Chaque release a un identifiant unique et ne change plus
+        preuve_attendue: Images taguées par version ou commit ; pas de tag latest en production
+        controles:
+          - type: compose
+            environnement: production
+            assertion: |
+              [.services[] | select(.image != null) | .image | split("/") | last]
+              | all(.[]; (test("@sha256:") or test(":")) and (test(":latest$") | not))
+          - type: motif
+            heuristique: true
+            motif: '(github|gitea)\.(sha|ref_name)|GITHUB_SHA|CI_COMMIT_(SHORT_)?SHA|CI_COMMIT_TAG'
+            fichiers: *pipeline
+            attendu: present
+
+      - id: '5.3'
+        facteur: 5
+        enonce: Le retour arrière se fait en redéployant une release antérieure
+        preuve_attendue: Rollback testé ; aucun correctif appliqué à chaud sur un environnement
+        controles:
+          - type: scenario
+            pour_chaque: *avec_compose
+            requiert: [release.variable, release.precedente, tests.fumee]
+            script: |
+              precedente=$({{ manifeste.release.precedente }})
+              test -n "$precedente"
+              {{ manifeste.release.variable }}="$precedente" docker compose {{ compose.test }} up -d --wait
+              ( {{ manifeste.tests.fumee }}
+              )
+              {{ manifeste.release.variable }}="{{ cycle.release }}" docker compose {{ compose.test }} up -d --wait
+              ( {{ manifeste.tests.fumee }}
+              )
+          - type: commande   # sans compose : la fumée exerce la release antérieure, puis celle du cycle ; elle échoue sur une release inexistante
+            pour_chaque: *sans_compose
+            requiert: [release.variable, release.precedente, tests.fumee]
+            commande: |
+              set -e
+              precedente=$({{ manifeste.release.precedente }})
+              test -n "$precedente"
+              ( export {{ manifeste.release.variable }}="$precedente"
+              {{ manifeste.tests.fumee }}
+              ) >/dev/null
+              ( export {{ manifeste.release.variable }}="{{ cycle.release }}"
+              {{ manifeste.tests.fumee }}
+              ) >/dev/null
+              # témoin hors de toute liste && ou || : set -e y reste actif
+              set +e
+              ( set -e; export {{ manifeste.release.variable }}=7e-release-inexistante
+              {{ manifeste.tests.fumee }}
+              ) >/dev/null 2>&1
+              temoin=$?
+              set -e
+              test "$temoin" -ne 0 || { echo "la fumée réussit sur une release inexistante : elle n'exerce pas la release" >&2; exit 1; }
+              echo "fumée réussie sur $precedente puis {{ cycle.release }}, en échec sur une release inexistante"
+          - type: declaration
+            question: Depuis le dernier cycle, tout changement sur un environnement est-il passé par une release ?
+
+      - id: '12.1'
+        facteur: 12
+        enonce: Les tâches ponctuelles s'exécutent depuis la release et la config de l'application
+        preuve_attendue: Migrations et scripts lancés via l'image applicative ; scripts versionnés dans le dépôt
+        controles:
+          - type: manifeste
+            assertion: |
+              ((.admin.taches // []) | length > 0)
+              and all(.admin.taches[]; .commande | test("docker compose .*\\b(run|exec)\\b"))
+
+      - id: '12.2'
+        facteur: 12
+        enonce: Aucune intervention manuelle directe sur la base ou le serveur
+        preuve_attendue: Migrations versionnées (Flyway, Django, Laravel) ; journal des exécutions
+        controles:
+          - type: fichier
+            versionne: *migrations
+          - type: commande
+            requiert: [admin.etat_migrations]
+            commande: '{{ manifeste.admin.etat_migrations }}'
+
+  - id: etat
+    nom: État
+    sens: Les processus ne portent aucun état ; l'état vit dans les services attachés.
+    facteurs: [{ "n": 6, nom: Processus }]
+    criteres:
+
+      - id: '6.1'
+        facteur: 6
+        enonce: Aucun état conservé en mémoire ou sur disque local entre deux requêtes
+        preuve_attendue: Sessions dans un store externe ; pas de sessions collantes (sticky sessions)
+        controles:
+          - type: motif
+            heuristique: true
+            motif: '\bip_hash\b|loadbalancer\.sticky|\bsticky\b'
+            fichiers: *config
+            attendu: absent
+          - type: scenario
+            requiert: [expose.service, tests.session]
+            script: |
+              docker compose {{ compose.test }} up -d --wait --scale {{ manifeste.expose.service }}=2
+              ( {{ manifeste.tests.session }}
+              )
+
+      - id: '6.2'
+        facteur: 6
+        enonce: Toute donnée persistante vit dans un service attaché
+        preuve_attendue: Fichiers déposés en stockage objet ou en volume déclaré ; système de fichiers du conteneur jetable
+        controles:
+          - type: compose
+            environnement: production
+            heuristique: true
+            requiert: [processus]
+            assertion: |
+              . as $c | $m.processus | all(.[]; $c.services[.service].read_only == true)
+
+  - id: expression
+    nom: Expression
+    sens: Le système s'exprime par son service et par son flux d'événements.
+    facteurs: [{ "n": 7, nom: Port binding }, { "n": 11, nom: Logs }]
+    criteres:
+
+      - id: '7.1'
+        facteur: 7
+        enonce: L'application embarque son serveur et expose son service sur un port
+        preuve_attendue: Serveur HTTP inclus dans l'image ; aucun serveur d'application injecté à l'exécution
+        controles:
+          - type: compose
+            environnement: production
+            heuristique: true
+            requiert: [expose.service]
+            assertion: |
+              .services[$m.expose.service] | ((.ports // []) + (.expose // [])) | length > 0
+          - type: scenario
+            requiert: [tests.fumee]
+            script: |
+              docker compose {{ compose.test }} up -d --wait
+              ( {{ manifeste.tests.fumee }}
+              )
+
+      - id: '7.2'
+        facteur: 7
+        enonce: Le port d'écoute vient de la config
+        preuve_attendue: Variable de port ; aucun port en dur dans le code
+        controles:
+          - type: motif
+            requiert: [expose.port_var]
+            motif: '^{{ manifeste.expose.port_var }}='
+            fichiers: *env_example
+            attendu: present
+          - type: motif
+            heuristique: true
+            motif: '(\.listen\([[:space:]]*[0-9]{2,5}|server\.port[[:space:]]*[=:][[:space:]]*[0-9]{2,5}|--port[= ][0-9]{2,5})'
+            fichiers: *code_app
+            exclure: *hors_tests
+            attendu: absent
+
+      - id: '11.1'
+        facteur: 11
+        enonce: Les logs partent sur stdout et stderr, sans fichier ni rotation gérés par l'application
+        preuve_attendue: Configuration de logging ; aucun fichier de log dans le conteneur
+        controles:
+          - type: motif
+            heuristique: true
+            motif: '(Rotating|TimedRotating)?FileHandler|FileAppender|logging\.file\.(name|path)|LOG_CHANNEL=(single|daily)|\.log["'']'
+            fichiers: *logging
+            exclure: *hors_tests
+            attendu: absent
+          - type: scenario
+            pour_chaque: '.processus[]?'
+            script: |
+              docker compose {{ compose.test }} up -d --wait
+              fichiers=$(docker compose {{ compose.test }} exec -T {{ item.service }} \
+                sh -c 'find / -xdev -type f -name "*.log" -mmin -15 2>/dev/null | head -n 1')
+              test -z "$fichiers"   # un exec en échec arrête le script : pas de faux conforme
+
+      - id: '11.2'
+        facteur: 11
+        enonce: Les logs forment un flux d'événements horodatés, un par ligne
+        preuve_attendue: Format homogène ; une trace d'erreur reste un seul événement
+        controles:
+          - type: scenario
+            heuristique: true   # exige des lignes JSON ; un autre format d'une ligne par événement reste à confirmer
+            requiert: [tests.fumee]
+            pour_chaque: '.processus[]?'
+            script: |
+              docker compose {{ compose.test }} up -d --wait
+              ( {{ manifeste.tests.fumee }}
+              )
+              docker compose {{ compose.test }} logs --no-log-prefix --since 15m {{ item.service }} \
+                | jq -R -s -e 'split("\n") | map(select(length > 0)) | length > 0 and all(.[];
+                    (fromjson? // null) | type == "object"
+                    and (has("timestamp") or has("@timestamp") or has("time") or has("ts")))'
+
+  - id: evolutif
+    nom: Évolutif
+    sens: La structure se multiplie et se remplace pendant que l'organisation se conserve.
+    facteurs: [{ "n": 8, nom: Concurrence }, { "n": 9, nom: Jetabilité }]
+    criteres:
+
+      - id: '8.1'
+        facteur: 8
+        enonce: La montée en charge se fait en ajoutant des processus
+        preuve_attendue: Plusieurs instances démarrées en parallèle sans conflit (docker compose up --scale)
+        controles:
+          - type: compose
+            environnement: production
+            requiert: [processus]
+            assertion: |
+              . as $c | $m.processus | all(.[]; $c.services[.service]
+                | (.container_name == null)
+                  and ((.ports // []) | all(.[]; (.published // "") == "")))
+          - type: scenario
+            requiert: [tests.fumee]
+            pour_chaque: '.processus[]?'
+            script: |
+              docker compose {{ compose.test }} up -d --wait --scale {{ item.service }}=2
+              ( {{ manifeste.tests.fumee }}
+              )
+
+      - id: '8.2'
+        facteur: 8
+        enonce: Chaque type de charge a son type de processus
+        preuve_attendue: Services distincts pour le web, les workers et les tâches planifiées
+        controles:
+          - type: manifeste
+            assertion: |
+              ((.processus // []) | length > 0)
+              and (.processus | map(.type) | unique | length) == (.processus | length)
+              and (.processus | map(.service) | unique | length) == (.processus | length)
+          - type: compose
+            environnement: production
+            requiert: [processus]
+            assertion: |
+              . as $c | $m.processus | all(.[]; $c.services[.service] != null)
+
+      - id: '9.1'
+        facteur: 9
+        enonce: Un processus démarre en quelques secondes
+        preuve_attendue: Temps de démarrage mesuré jusqu'à l'état prêt
+        controles:
+          - type: compose
+            environnement: production
+            requiert: [processus]
+            assertion: |
+              . as $c | $m.processus | all(.[]; $c.services[.service].healthcheck as $h
+                | $h != null and ($h.disable // false) == false)
+          - type: metrique
+            indicateur: temps_demarrage_s
+            ordre_de_grandeur: quelques secondes
+            comparaison: '<='
+            pour_chaque: '.processus[]?'
+            mesure: |
+              docker compose {{ compose.test }} up -d --wait >/dev/null 2>&1
+              docker compose {{ compose.test }} stop {{ item.service }} >/dev/null 2>&1
+              debut=$(date +%s)
+              docker compose {{ compose.test }} up -d --wait --no-deps {{ item.service }} >/dev/null 2>&1
+              echo $(( $(date +%s) - debut ))
+
+      - id: '9.2'
+        facteur: 9
+        enonce: Un processus s'arrête proprement sur SIGTERM
+        preuve_attendue: Requêtes en cours terminées, tâches remises en file ; délai d'arrêt configuré
+        controles:
+          - type: compose
+            environnement: production
+            requiert: [processus]
+            assertion: |
+              . as $c | $m.processus | all(.[]; $c.services[.service].stop_grace_period != null)
+          - type: scenario
+            pour_chaque: '.processus[]?'
+            script: |   # 137 : tué par SIGKILL à l'échéance du délai, donc arrêt non propre
+              docker compose {{ compose.test }} up -d --wait
+              docker compose {{ compose.test }} stop {{ item.service }}
+              docker inspect $(docker compose {{ compose.test }} ps -aq {{ item.service }}) \
+                | jq -e 'all(.[]; .State.ExitCode != 137)'
+
+      - id: '9.3'
+        facteur: 9
+        enonce: Un arrêt brutal ne corrompt rien et ne perd aucune tâche
+        preuve_attendue: Test d'arrêt forcé (kill -9) ; tâches idempotentes ou rejouables
+        controles:
+          - type: scenario
+            requiert: [tests.fumee]
+            pour_chaque: '.processus[]?'
+            script: |
+              docker compose {{ compose.test }} up -d --wait
+              docker compose {{ compose.test }} kill -s SIGKILL {{ item.service }}
+              docker compose {{ compose.test }} up -d --wait
+              ( {{ manifeste.tests.fumee }}
+              )
+          - type: scenario
+            requiert: [tests.taches.enfiler, tests.taches.verifier]
+            pour_chaque: '.processus[]? | select(.type == "worker")'
+            script: |
+              docker compose {{ compose.test }} up -d --wait
+              ( {{ manifeste.tests.taches.enfiler }}
+              )
+              docker compose {{ compose.test }} kill -s SIGKILL {{ item.service }}
+              docker compose {{ compose.test }} up -d --wait
+              ( {{ manifeste.tests.taches.verifier }}
+              )
+
+  - id: environnement
+    nom: Environnement
+    sens: Le même environnement du poste de dev à la production.
+    facteurs: [{ "n": 10, nom: Parité dev/prod }]
+    criteres:
+
+      - id: '10.1'
+        facteur: 10
+        enonce: Mêmes services externes et mêmes versions dans tous les environnements
+        preuve_attendue: Mêmes images et versions en dev, recette et prod ; pas de substitut léger en dev
+        controles:
+          - type: compose
+            environnement: tous
+            requiert: [processus]
+            assertion: |
+              ($m.processus | map(.service)) as $p
+              | map(.config.services | with_entries(select(.key | IN($p[]) | not)) | map_values(.image))
+              | unique | length == 1
+          - type: motif
+            heuristique: true
+            motif: '(sqlite|jdbc:h2:|H2Dialect)'
+            fichiers: *config
+            attendu: absent
+
+      - id: '10.2'
+        facteur: 10
+        enonce: Un commit atteint la production en heures, pas en semaines
+        preuve_attendue: Délai mesuré entre le commit et la mise en production
+        controles:
+          - type: metrique
+            indicateur: delai_commit_production_h
+            ordre_de_grandeur: heures, pas semaines
+            comparaison: '<='
+            requiert: [environnements.<nom>.release_deployee, environnements.<nom>.deploye_le]
+            mesure: |
+              set -e
+              r=$({{ manifeste.environnements.production.release_deployee }})
+              d=$({{ manifeste.environnements.production.deploye_le }})
+              c=$(git log -1 --format=%ct "$r^{commit}")   # la date du commit, même pour un tag annoté
+              # une date illisible, ou une mise en production avant le commit : aucune mesure
+              case "$d$c" in ''|*[!0-9]*) echo "release ou date illisible : ${r:-?} ${d:-?}" >&2; exit 1 ;; esac
+              [ "$d" -ge "$c" ] || { echo "mise en production avant le commit de $r" >&2; exit 1; }
+              echo $(( (d - c) / 3600 ))
+
+      - id: '10.3'
+        facteur: 10
+        enonce: Ceux qui écrivent le code participent à son déploiement et à son exploitation
+        preuve_attendue: Déploiement déclenché par l'équipe de développement ; accès aux logs de production
+        controles:
+          - type: motif
+            heuristique: true
+            motif: 'workflow_dispatch'
+            fichiers: *pipeline
+            attendu: present
+          - type: declaration
+            question: Les développeurs déclenchent-ils les déploiements et lisent-ils les logs de production ?
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  SECOND ORDRE : 8 critères hors 12 facteurs
+# ─────────────────────────────────────────────────────────────────────────────
+second_ordre:
+  sens: >-
+    Ces 8 critères ferment la boucle que les 12 facteurs laissent à la
+    plateforme : le système s'observe et révise ses propres critères.
+  criteres:
+
+    - id: EX.1
+      phase: examiner
+      enonce: Le flux émis est collecté, agrégé et consultable
+      preuve_attendue: "Chaîne d'observabilité en place : collecte, recherche, tableaux de bord"
+      controles:
+        - type: commande
+          requiert: [observabilite.requete_test]
+          commande: '{{ manifeste.observabilite.requete_test }}'
+          attendu: sortie_non_vide
+        - type: manifeste
+          assertion: |
+            (.observabilite.tableaux_de_bord // "") != ""
+
+    - id: EX.2
+      phase: examiner
+      enonce: Des indicateurs mesurent l'état du système face à des seuils explicites
+      preuve_attendue: Indicateurs et seuils documentés (taux d'erreur, latence, délai de déploiement) ; alertes actives
+      controles:
+        - type: manifeste
+          assertion: |
+            ($requis - ((.seuils // {}) | keys) | length == 0)
+            and all((.seuils // {})[]; .valeur != null)
+        - type: commande
+          requiert: [observabilite.alertes]
+          commande: '{{ manifeste.observabilite.alertes }}'
+          attendu: sortie_non_vide
+
+    - id: EV.1
+      phase: evoluer
+      enonce: Le système garde la mémoire de ses cycles
+      preuve_attendue: Historique horodaté des releases, incidents et mesures, comparable d'un cycle à l'autre
+      controles:
+        - type: journal
+          assertion: |   # depuis le contrat 0.5 : au rang instance, le ticket de la demande ; à tout rang, les fichiers cités
+            if length < 2 then null
+            else all(.[]; .release != null and .cycle.fin != null
+              and (.mesures | type == "array") and (.incidents | type == "array")
+              and (((.cycle.contrat_version | tostring | split(".") | map(tonumber? // 0)) < [0, 5])
+                or ((.cycle.niveau == "meta" or ((.demande.lien // "") != "" and (.demande.empreinte // "") != ""))
+                  and all((.fichiers // [])[]; .lien != null and .octets != null and .empreinte != null))))
+            end
+
+    - id: EV.2
+      phase: evoluer
+      enonce: Chaque régression est rattachée à la release qui l'a introduite
+      preuve_attendue: Corrélation entre identifiant de release et indicateurs
+      controles:
+        - type: journal
+          assertion: |   # d'un cycle au suivant, contrat changé ou non, sur les critères communs (contrats.journal.cloture)
+            if length < 2 then null
+            else all(range(1; length) as $i | .[$i - 1] as $a | .[$i] as $b
+              | [$a.scores | to_entries[]
+                  | select(.value.score != null and ($b.scores[.key].score // null) != null
+                           and $b.scores[.key].score < .value.score)
+                  | .key]
+                - [$b.regressions[]? | select(.release != null) | .critere]
+              | length == 0; .)
+            end
+
+    - id: EQ.1
+      phase: equilibrer
+      enonce: Une mesure hors seuil déclenche une correction définie
+      preuve_attendue: "Règle de rétroaction documentée et testée : rollback, mise à l'échelle ou ticket"
+      controles:
+        - type: manifeste
+          requiert: [retroaction]
+          assertion: |
+            ((.retroaction // []) | length > 0)
+            and (((.seuils // {}) | keys) - ["periode_revue_cycles"]
+              - ((.retroaction // []) | map(.indicateur)) | length == 0)
+            and all(.retroaction[]?; .correction | IN("rollback", "mise_a_echelle", "ticket"))
+        - type: journal
+          assertion: |
+            if length < 1 then null
+            else .[-1] as $l
+              | [$l.mesures[]? | select(.hors_seuil) | .indicateur]
+                - [$l.decisions[]? | .indicateur]
+              | length == 0
+            end
+
+    - id: EQ.2
+      phase: equilibrer
+      enonce: Les critères eux-mêmes sont révisés à partir de l'historique
+      preuve_attendue: Revue périodique des seuils et des règles ; journal des modifications
+      controles:
+        - type: journal
+          requiert: [seuils.periode_revue_cycles]
+          assertion: |
+            $m.seuils.periode_revue_cycles.valeur as $k
+            | if $k == null then false
+              elif length < $k then null
+              else .[(length - $k):]
+                | any(.[]; ((.seuils_revises // []) + (.propositions_modele // [])) | length > 0)
+              end
+
+    - id: IN.1
+      porte_sur: invariant
+      enonce: Ce que la boucle peut modifier est séparé de ce qu'elle ne peut pas modifier
+      preuve_attendue: Liste explicite des éléments exemptés d'auto-modification (axiome, contrats d'interface)
+      controles:
+        - type: manifeste
+          assertion: |
+            ["axiome", "cycle", "contrats"] - (.invariants // []) | length == 0
+        - type: journal
+          assertion: |
+            if length < 1 then null
+            else all(.[]; (.decisions // []) | all(.[]; (.cible | IN(($m.invariants // [])[])) | not))
+            end
+
+    - id: FR.1
+      porte_sur: fractale
+      enonce: Le service exposé (facteur 7) est consommable par une autre application comme service attaché (facteur 4)
+      preuve_attendue: Contrat d'interface documenté ; consommation par simple URL de config, sans couplage de code
+      controles:
+        - type: fichier
+          requiert: [expose.contrat]
+          versionne: '^{{ manifeste.expose.contrat }}$'
+        - type: manifeste
+          assertion: |
+            (.expose.variable_consommateur // "") | test("^[A-Z][A-Z0-9_]*$")
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  BOUCLE DE SECOND ORDRE
+# ─────────────────────────────────────────────────────────────────────────────
+boucle:
+  sens: >-
+    Examiner, Évoluer et Équilibrer forment la boucle de second ordre. Chaque
+    phase a ses critères propres et ses prérequis dans les 12 facteurs.
+  phases:
+    examiner:
+      orientation: Le système se mesure à ses propres seuils
+      criteres: [EX.1, EX.2]
+      prerequis: ['11.1', '11.2']
+    evoluer:
+      orientation: Le progrès se juge d'un cycle à l'autre, pas contre une norme
+      criteres: [EV.1, EV.2]
+      prerequis: ['1.1', '5.2']
+    equilibrer:
+      orientation: La correction vise la structure, puis les critères eux-mêmes
+      criteres: [EQ.1, EQ.2]
+      prerequis: ['5.3', '8.1', '9.2', '9.3']
+  blocage: >-
+    Un écart (score inférieur ou égal à 1) sur un prérequis bloque la phase :
+    ses critères propres sont plafonnés à 1 et l'écart passe en tête du plan
+    suivant. Équilibrer bloquée n'applique aucune correction automatique ; elle
+    ouvre un ticket.
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  CYCLE 7E : le moteur d'exécution du modèle
+# ─────────────────────────────────────────────────────────────────────────────
+cycle:
+  ordre: [evaluer, elaborer, executer, examiner, evoluer, emettre, equilibrer]
+  phases:
+    evaluer:
+      nom: Évaluer
+      porteur: résolveur
+      role: collecte l'état
+      entree: [demande (rang instance), manifeste, dépôt à la release courante, journal]
+      actions:
+        - Au rang instance, recevoir la demande qui lance le cycle : le ticket Jira d'une évolution de l'application (front ou back), exporté en MHTML. C'est le noyau qui lance le méta-système pour qu'il produise un système concret ; aucun cycle d'instance ne part sans lui. Au rang méta, aucun ticket.
+        - Résoudre la version épinglée du modèle ; une montée de version ne se fait qu'ici.
+        - Valider le manifeste contre contrats.manifeste.
+        - Collecter les preuves (fichiers versionnés, config compose résolue par environnement, mesures).
+        - Détecter l'exécution en CI (cycle.en_ci).
+      sortie: état horodaté, release identifiée
+      garde: demande reçue (rang instance), manifeste valide et version du modèle résolue, sinon le cycle s'arrête
+    elaborer:
+      nom: Élaborer
+      porteur: résolveur, puis une personne
+      role: analyse, planifie
+      entree: [état, écarts et décisions du cycle précédent]
+      actions:
+        - Ordonner les actions selon synthese.ordre_de_traitement.
+        - À effet égal, retenir l'action la plus réversible.
+      sortie: plan ordonné, chaque action rattachée aux critères qu'elle vise
+      garde: aucune action ne cible l'organisation ni un contrat (IN.1)
+    executer:
+      nom: Exécuter
+      porteur: pipeline du projet
+      role: applique le plan par la chaîne unique
+      outille_par: [5, 6, 8, 9]
+      entree: [plan]
+      actions:
+        - Produire une release identifiée et immuable (5.1, 5.2).
+        - Déployer cette release et lancer les tâches ponctuelles depuis elle (12.1).
+      sortie: release déployée
+      garde: aucune modification hors release (12.2)
+    examiner:
+      nom: Examiner
+      porteur: résolveur
+      role: se mesure à ses propres seuils
+      entree: [état, release]
+      actions:
+        - Exécuter les contrôles des 35 critères et les agréger (echelle.agregation).
+        - Comparer chaque mesure au seuil déclaré par l'instance.
+        - Appliquer boucle.blocage.
+      sortie: [scores, constats, mesures, écarts]
+    evoluer:
+      nom: Évoluer
+      porteur: résolveur
+      role: compare au cycle précédent
+      entree: [scores, journal]
+      actions:
+        - Comparer au dernier cycle clos, terme par terme ; d'un contrat à l'autre, sur les critères communs aux deux versions.
+        - Rattacher chaque baisse de score à la release qui l'a introduite (EV.2), et à la version du modèle si elle a changé ; au rang méta, la release est une version du modèle, que la baisse remet en question.
+        - Juger la viabilité du cycle (finalite.viabilite).
+      sortie: [tendance, régressions, viabilité]
+    emettre:
+      nom: Émettre
+      porteur: résolveur
+      role: publie
+      outille_par: [7, 11]
+      entree: [scores, tendance, régressions, viabilité]
+      actions:
+        - Écrire l'entrée de journal du cycle, encore ouverte (cycle.fin vide).
+      sortie: entrée de journal
+      garde: entrée conforme à contrats.journal
+    equilibrer:
+      nom: Équilibrer
+      porteur: résolveur, puis une personne
+      role: corrige la structure, puis les critères
+      entree: [écarts, mesures, tendance, journal]
+      actions:
+        - Pour toute mesure hors seuil, appliquer la correction déclarée (manifeste.retroaction).
+        - Réviser les seuils locaux quand l'historique le justifie (EQ.2 au rang instance).
+        - Proposer au méta-projet les révisions de critères (EQ.2 au rang méta) ; au rang méta, proposer de revenir sur la version du modèle qui a introduit une régression (nature retour).
+        - Compléter l'entrée, la clore (cycle.fin) et la publier au méta-projet.
+      sortie: [décisions, seuils révisés, propositions au modèle]
+      garde: aucune décision ne cible l'organisation ni un contrat (IN.1)
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  FRACTALE : la même cellule à chaque rang
+# ─────────────────────────────────────────────────────────────────────────────
+fractale:
+  principe: >-
+    Le même axiome organise chaque rang, et ce qu'un rang exprime devient
+    Élément ou Espace du rang suivant. Le modèle s'exécute tel quel à chaque
+    rang : même axiome, mêmes critères, même cycle.
+  rangs:
+    meta:
+      nom: Méta-projet
+      release: une version du modèle, identifiée par un tag Git
+      production: la publication du modèle aux projets
+      elements: le modèle (ce fichier) et les journaux des instances
+      espace: le dépôt du méta-projet et ses contrats
+      exprime: le modèle versionné, publié aux instances
+      devient: Élément de chaque instance, épinglé comme une dépendance verrouillée (2.1)
+    instance:
+      nom: Projet qui exécute le modèle
+      elements: son dépôt et ses dépendances, dont le modèle
+      espace: sa config et les services qu'il consomme
+      exprime: son service (7) et son journal de cycle
+      devient: Espace (4) des projets qui le consomment (FR.1), et Élément du méta-projet par son journal
+  positions:   # relatives à une instance, d'après son manifeste
+    'N-1': ce que l'instance consomme (manifeste.consomme)
+    'N': l'instance
+    'N+1': ce qui consomme l'instance (manifeste.expose)
+  bouclage:
+    - { de: 'N-1', quoi: bibliothèque, vers: 'N', devient: Élément, facteur: 2 }
+    - { de: 'N-1', quoi: service exposé, vers: 'N', devient: Espace, facteur: 4 }
+    - { de: 'N', quoi: service exposé, vers: 'N+1', devient: Espace, facteur: 4, critere: FR.1 }
+    - { de: instance, quoi: journal de cycle, vers: meta, devient: Élément, critere: EQ.2 }
+    - { de: meta, quoi: modèle révisé, vers: instance, devient: Élément, facteur: 2 }
+  cloture: >-
+    Les deux dernières lignes referment la chaîne : ce que le méta-projet
+    exprime redevient Élément de chaque instance, et ce que chaque instance
+    exprime redevient Élément du méta-projet. C'est ce bouclage qui rend le
+    projet autotélique.
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  CONTRATS : stables entre rangs (voir mutabilite.contrats)
+# ─────────────────────────────────────────────────────────────────────────────
+contrats:
+
+  manifeste:
+    fichier: 7e-instance.yaml   # à la racine du dépôt de chaque instance
+    obligatoires: [instance, modele, journal, invariants, seuils, retroaction]
+    champs:
+      instance: { id: identifiant stable, nom: libellé, niveau: "meta | instance" }
+      modele: { ref: modele-executif-12f-7e, version: version épinglée }
+      journal: répertoire du journal de cycle, sous la racine du dépôt (ni la racine elle-même, ni au-dehors)
+      environnements:   # une entrée par environnement, production comprise
+        <nom>:
+          fichiers: fichiers compose (-f), dans l'ordre
+          env_file: fichier d'environnement
+          release_deployee: commande qui imprime la release déployée (tag ou commit)
+          deploye_le: commande qui imprime la date du déploiement (epoch, en secondes)
+      environnement_test: environnement des scénarios, lancé en projet éphémère
+      release:
+        variable: variable qui porte la release ; compose la lit, et sans compose le test de fumée
+        precedente: commande qui imprime la release antérieure
+      processus:
+        - { type: "web | worker | planificateur", service: service compose }
+      consomme:
+        - nom: nom de la bibliothèque ou du service
+          type: "bibliotheque | service"
+          via: variable d'environnement qui désigne le service
+          instance: identifiant, si c'est une instance du modèle
+      expose:
+        service: service compose exposé
+        port_var: variable du port d'écoute
+        contrat: chemin du contrat d'interface (OpenAPI, AsyncAPI…)
+        variable_consommateur: variable par laquelle un consommateur l'attache (ex. FACTURATION_URL)
+      admin:
+        taches:
+          - { nom: nom, commande: docker compose run --rm … }
+        etat_migrations: commande qui liste les migrations appliquées
+      tests:
+        fumee: commande de test de fumée ; sans compose, elle exerce la release que porte release.variable (5.3)
+        session: commande qui vérifie une session à travers deux répliques
+        taches: { enfiler: commande, verifier: commande }
+      bascule: { env_file: fichier d'environnement qui pointe un service vers une autre instance }
+      observabilite:
+        requete_test: commande qui interroge le flux collecté
+        alertes: commande qui liste les alertes actives
+        tableaux_de_bord: URL
+      seuils:   # fixés par l'instance (EX.2), révisés par elle (EQ.2)
+        <indicateur>: { valeur: nombre, unite: unité }
+        requis: [temps_demarrage_s, delai_commit_production_h, periode_revue_cycles]
+      retroaction:
+        - { indicateur: clé de seuils, correction: "rollback | mise_a_echelle | ticket" }
+      invariants: au moins axiome, cycle et contrats, plus ce que l'instance exempte elle-même
+      sans_objet: { <critère>: justification }
+      declarations: { <critère>: { reponse: "conforme | partiel | absent", preuve: lien vers la preuve } }
+
+  journal:
+    emplacement: <manifeste.journal>/<instance.id>/<numéro sur 4 chiffres>.yaml, publié au méta-projet
+    cycle: >-
+      À côté de l'entrée, le répertoire <manifeste.journal>/<instance.id>/<numéro>/
+      porte, au rang instance, le ticket de la demande (jira.mhtml) et, à côté
+      de lui, temp/, les fichiers temporaires du cycle. Ce répertoire est
+      conservé et jamais versionné (un .gitignore y ignore tout, lui compris) ;
+      l'entrée, versionnée, cite le ticket et chaque fichier par un lien, avec
+      sa taille et son empreinte.
+    cloture: >-
+      Émettre écrit l'entrée ouverte (cycle.fin vide) ; Équilibrer la complète
+      et la clôt. Close, elle n'est plus réécrite. Seules les entrées closes se
+      comparent ; d'un contrat_version à l'autre, sur les critères communs aux
+      deux versions, et une baisse se rattache à la release qui l'a introduite.
+    champs:
+      cycle:
+        id: identifiant
+        numero: rang du cycle dans l'instance, à partir de 0
+        instance: identifiant de l'instance
+        niveau: "meta | instance"
+        modele_version: version du modèle exécutée
+        contrat_version: version du contrat du modèle exécuté (versionnage.contrat_version)
+        en_ci: booléen, détecté en Évaluer
+        debut: horodatage ISO 8601
+        fin: horodatage ISO 8601, vide tant que l'entrée est ouverte
+      release: identifiant de la release examinée
+      demande: "{ lien: chemin du ticket relatif au répertoire de l'instance (<numéro>/jira.mhtml), titre: sujet du ticket, octets: taille, empreinte: sha256 }, null au rang méta"
+      fichiers: [{ lien: chemin relatif au répertoire de l'instance (<numéro>/temp/…), octets: taille totale, nombre: fichiers contenus, empreinte: sha256 }]
+      plan: [{ critere: identifiant, raison: "prerequis | terme le plus faible" }]
+      phases: { <phase>: { statut: "executee | bloquee", cause: critères en écart } }
+      scores:
+        <critère>:
+          score: "0 | 1 | 2 | 3 | null"
+          constat: texte qui cite la preuve
+          preuves: [références]
+          controles: [{ type: type, resultat: résultat, cause: "outil_absent | hors_compose | execution", heuristique: booléen, constat: texte }]
+      synthese: { <terme>: { moyenne: nombre, ecarts: [critères] } }
+      mesures: [{ indicateur: clé, valeur: nombre, seuil: nombre, hors_seuil: booléen }]
+      incidents: [{ date: horodatage, release: identifiant, resume: texte }]
+      remarques: ["texte (ex. dépôt modifié depuis le dernier commit)"]
+      outils: { <outil>: "booléen : outil trouvé ou non en Évaluer" }
+      tendance: { <terme>: écart de moyenne avec le cycle précédent }
+      regressions: [{ critere: identifiant, release: release qui l'a introduite, modele: "version du modèle, si elle a changé depuis le cycle précédent" }]
+      viabilite: { viable: booléen, progresse: booléen }
+      decisions:
+        - indicateur: clé
+          critere: identifiant
+          correction: "rollback | mise_a_echelle | ticket"
+          reversible: booléen
+          cible: élément modifié
+          motif: la mesure hors seuil et son seuil ; la correction remplacée, si Équilibrer est bloquée
+      seuils_revises: [{ indicateur: clé, avant: nombre, apres: nombre, motif: texte }]
+      propositions_modele: [{ critere: identifiant, nature: "ajout | retrait | reformulation | controle | retour", motif: texte }]
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  OBSERVATION DU MODÈLE : le second ordre au rang méta
+# ─────────────────────────────────────────────────────────────────────────────
+observation_du_modele:
+  principe: >-
+    Au rang méta, Examiner observe le modèle et non les systèmes : ce que les
+    critères discriminent, ce que les contrôles prouvent, ce que les décisions
+    corrigent. Ces observations fondent les révisions de structure (EQ.2).
+  entree: journaux de toutes les instances sur la période de revue
+  indicateurs:
+    sans_objet_frequent:
+      mesure: part des instances qui déclarent le critère sans objet
+      proposition: retrait ou reformulation du critère
+    non_discriminant:
+      mesure: critère au même score dans toutes les instances sur la période
+      proposition: contrôle plus fin
+    controle_muet:
+      mesure: part des exécutions d'un contrôle en erreur ou sans preuve
+      proposition: correction du contrôle
+    ecart_persistant:
+      mesure: écart maintenu sur la période malgré une décision
+      proposition: révision de la règle de rétroaction, ou du critère
+  seuils: fixés par le méta-projet dans son propre manifeste au cycle 0 (EX.2 à son rang)
+  sortie: propositions de révision, publiées en version mineure après un cycle du méta-projet
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  AMORÇAGE ET VERSIONNAGE
+# ─────────────────────────────────────────────────────────────────────────────
+amorcage:
+  principe: >-
+    Le méta-projet est la première instance du modèle qu'il porte : il
+    l'exécute sur lui-même avant tout autre projet.
+  cycle_0:
+    - Le méta-projet écrit son propre manifeste (niveau meta), seuils compris.
+    - Il exécute le cycle complet sur son dépôt.
+    - Il déclare et justifie les critères sans objet à son rang.
+  publication: >-
+    Une version du modèle n'est publiée aux instances qu'après un cycle clos
+    sur le méta-projet lui-même, avec IN.1 au moins à 2.
+  resolveur: >-
+    Le résolveur appartient au méta-projet ; il est versionné et publié avec
+    le modèle.
+
+versionnage:
+  schema: semver
+  majeure: un contrat change ; décision prise hors cycle, jamais par la boucle
+  mineure: révision de structure issue d'EQ.2 au rang méta ; le méta-projet s'améliorant à chaque ticket des instances, une version mineure peut suivre chaque ticket
+  correctif: formulation, sans effet sur les scores
+  fiche: >-
+    Toute publication, correctif compris, met à jour la fiche de version
+    (modele.version, modele.date, modele.statut) ; cette mise à jour seule
+    n'est pas une révision de structure.
+  contrat_version: >-
+    la version majeure ; avant 1.0.0, 0.<mineure>, car toute version 0.x peut
+    changer un contrat
+  instances: >-
+    Elles épinglent la version comme une dépendance verrouillée (2.1) et n'en
+    changent qu'en Évaluer, au début d'un cycle.

@@ -1,0 +1,557 @@
+# Tests définis en base de la recette (recette/definis.mjs)
+#
+# Importés par « node recette/lancer.mjs importer », édités dans l'interface,
+# réécrits par « node recette/lancer.mjs exporter ». Seize opérations au plus
+# par test ; chacune est une requête SQL (sql, en lecture seule) ou un appel de
+# fonction de la liste blanche (fonction + arguments), comparé à l'attendu.
+# Comparaisons : egal (défaut), contient, nombre_lignes, vide, non_vide,
+# tolerance (avec tolerance). Les requêtes lisent les schémas donnees (fichiers
+# YAML du dépôt) et recette (campagnes).
+#
+# Les valeurs de référence des fonctions sont celles de Python (round, format g,
+# shlex.quote) : le résolveur leur est fidèle, et ces tests le redisent en base.
+version: 1
+tests:
+  - nom: "Données : les fichiers du dépôt sont chargés et lisibles"
+    description: Le lanceur recharge le modèle, les manifestes et le journal à chaque campagne (donnees.document).
+    operations:
+      - libelle: un seul modèle chargé
+        sql: SELECT count(*) FROM donnees.modele
+        attendu: 1
+      - libelle: au moins un manifeste, celui du méta-projet
+        sql: SELECT array_agg(instance ORDER BY instance) FROM donnees.manifeste WHERE niveau = 'meta'
+        attendu: [meta-12f-7e]
+      - libelle: au moins le cycle 0 du méta-projet
+        sql: SELECT count(*) > 0 FROM donnees.entree WHERE instance = 'meta-12f-7e' AND numero = 0
+        attendu: true
+      - libelle: aucun document illisible
+        sql: SELECT chemin FROM donnees.document WHERE contenu ? 'erreur'
+        comparaison: vide
+      - libelle: les documents sont ceux de la campagne en cours
+        sql: SELECT bool_and(campagne_id = (SELECT max(id) FROM recette.campagne)) FROM donnees.document
+        attendu: true
+
+  - nom: "Workflows : le catalogue et la CI que l'interface reflète"
+    description: recette/workflows.yaml et les workflows de CI du dépôt, chargés à chaque campagne, nourrissent les pages Workflows, Déclencheurs et Suivi.
+    operations:
+      - libelle: le catalogue des workflows est chargé, une fois
+        sql: SELECT count(*) FROM donnees.document WHERE nature = 'workflows'
+        attendu: 1
+      - libelle: au moins un workflow de CI est chargé
+        sql: SELECT count(*) > 0 FROM donnees.document WHERE nature = 'ci'
+        attendu: true
+      - libelle: deux projets, le méta-projet puis le binôme
+        sql: SELECT array_agg(p ->> 'id' ORDER BY r) FROM donnees.document d, jsonb_array_elements(donnees.liste(d.contenu -> 'projets')) WITH ORDINALITY AS x(p, r) WHERE d.nature = 'workflows'
+        attendu: [meta-12f-7e, binome]
+      - libelle: chaque workflow de nature ci renvoie à un fichier chargé
+        sql: SELECT w ->> 'fichier' FROM donnees.document d, jsonb_array_elements(donnees.liste(d.contenu -> 'projets')) p, jsonb_array_elements(donnees.liste(p -> 'workflows')) w WHERE d.nature = 'workflows' AND w ->> 'nature' = 'ci' AND NOT EXISTS (SELECT 1 FROM donnees.document c WHERE c.nature = 'ci' AND c.chemin = w ->> 'fichier')
+        comparaison: vide
+      - libelle: chaque déclencheur de l'interface porte une action de la liste blanche
+        sql: SELECT coalesce(g ->> 'action', '(aucune)') FROM donnees.document d, jsonb_array_elements(donnees.liste(d.contenu -> 'projets')) p, jsonb_array_elements(donnees.liste(p -> 'workflows')) w, jsonb_array_elements(donnees.liste(w -> 'declencheurs')) g WHERE d.nature = 'workflows' AND g ->> 'type' = 'interface' AND coalesce(g ->> 'action', '') NOT IN ('campagne', 'valider', 'cycle', 'charger')
+        comparaison: vide
+      - libelle: le binôme, dix décisions numérotées de 1 à 10
+        sql: SELECT array_agg((x ->> 'numero')::int ORDER BY (x ->> 'numero')::int) FROM donnees.document d, jsonb_array_elements(donnees.liste(d.contenu -> 'projets')) p, jsonb_array_elements(donnees.liste(p -> 'decisions')) x WHERE d.nature = 'workflows' AND p ->> 'id' = 'binome'
+        attendu: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+  - nom: "Modèle : sept termes, douze facteurs, trente-cinq critères"
+    description: La structure du modèle, vue en SQL depuis le fichier chargé.
+    operations:
+      - libelle: sept termes, dans l'ordre de l'axiome
+        sql: SELECT array_agg(id ORDER BY rang) FROM donnees.terme
+        attendu: [elements, espace, engendrent, etat, expression, evolutif, environnement]
+      - libelle: douze facteurs, numérotés de 1 à 12
+        sql: SELECT array_agg(n ORDER BY n) FROM donnees.facteur
+        attendu: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+      - libelle: 35 critères en tout
+        sql: SELECT count(*) FROM donnees.critere
+        attendu: 35
+      - libelle: 27 critères rattachés aux termes
+        sql: SELECT count(*) FROM donnees.critere WHERE terme <> 'second_ordre'
+        attendu: 27
+      - libelle: 8 critères de second ordre
+        sql: SELECT array_agg(id ORDER BY ordre) FROM donnees.critere WHERE terme = 'second_ordre'
+        attendu: [EX.1, EX.2, EV.1, EV.2, EQ.1, EQ.2, IN.1, FR.1]
+      - libelle: identifiants uniques
+        sql: SELECT id FROM donnees.critere GROUP BY id HAVING count(*) > 1
+        comparaison: vide
+
+  - nom: "Modèle : chaque critère est contrôlable"
+    operations:
+      - libelle: au moins un contrôle par critère
+        sql: SELECT id FROM donnees.critere WHERE nb_controles = 0
+        comparaison: vide
+      - libelle: un énoncé et une preuve attendue par critère
+        sql: SELECT id FROM donnees.critere WHERE coalesce(enonce, '') = '' OR coalesce(preuve_attendue, '') = ''
+        comparaison: vide
+      - libelle: les neuf types de contrôle documentés
+        sql: SELECT count(*) FROM donnees.type_controle
+        attendu: 9
+      - libelle: chaque contrôle a un type documenté
+        sql: SELECT DISTINCT type FROM donnees.controle EXCEPT SELECT type FROM donnees.type_controle
+        comparaison: vide
+      - libelle: trois critères à déclaration (1.2, 5.3, 10.3), en ordre binaire (indépendant de la collation)
+        sql: SELECT array_agg(critere ORDER BY critere COLLATE "C") FROM donnees.controle WHERE type = 'declaration'
+        attendu: ['1.2', '10.3', '5.3']
+      - libelle: des contrôles heuristiques existent, jamais sur une déclaration
+        sql: SELECT count(*) FILTER (WHERE heuristique) > 0 AND count(*) FILTER (WHERE heuristique AND type = 'declaration') = 0 FROM donnees.controle
+        attendu: true
+
+  - nom: "Modèle : prérequis de la boucle de second ordre"
+    description: boucle.phases.*.prerequis ; un prérequis en écart bloque sa phase.
+    operations:
+      - libelle: Examiner suppose les logs (11.1, 11.2)
+        sql: SELECT array_agg(critere ORDER BY rang) FROM donnees.prerequis WHERE phase = 'examiner'
+        attendu: ['11.1', '11.2']
+      - libelle: Évoluer suppose codebase et releases (1.1, 5.2)
+        sql: SELECT array_agg(critere ORDER BY rang) FROM donnees.prerequis WHERE phase = 'evoluer'
+        attendu: ['1.1', '5.2']
+      - libelle: Équilibrer suppose rollback, concurrence et jetabilité
+        sql: SELECT array_agg(critere ORDER BY rang) FROM donnees.prerequis WHERE phase = 'equilibrer'
+        attendu: ['5.3', '8.1', '9.2', '9.3']
+      - libelle: chaque prérequis est un critère des douze facteurs
+        sql: |
+          SELECT p.critere FROM donnees.prerequis p
+          LEFT JOIN donnees.critere c ON c.id = p.critere AND c.terme <> 'second_ordre'
+          WHERE c.id IS NULL
+        comparaison: vide
+
+  - nom: "Manifeste du méta-projet : épinglage, seuils, rétroaction"
+    operations:
+      - libelle: version épinglée = version du modèle porté
+        sql: SELECT m.version_epinglee = (SELECT version FROM donnees.modele) FROM donnees.manifeste m WHERE m.niveau = 'meta'
+        attendu: true
+      - libelle: modele.ref = identifiant du modèle
+        sql: SELECT m.modele_ref = (SELECT id FROM donnees.modele) FROM donnees.manifeste m WHERE m.niveau = 'meta'
+        attendu: true
+      - libelle: chaque seuil a une valeur numérique et une unité
+        sql: SELECT indicateur FROM donnees.seuil WHERE valeur IS NULL OR coalesce(unite, '') = ''
+        comparaison: vide
+      - libelle: seuils requis par les métriques des critères applicables (EX.2)
+        sql: |
+          SELECT DISTINCT k.parametres ->> 'indicateur' FROM donnees.controle k
+          WHERE k.type = 'metrique'
+            AND k.critere NOT IN (SELECT s.critere FROM donnees.sans_objet s JOIN donnees.manifeste m USING (instance) WHERE m.niveau = 'meta')
+          EXCEPT
+          SELECT s.indicateur FROM donnees.seuil s JOIN donnees.manifeste m USING (instance) WHERE m.niveau = 'meta'
+        comparaison: vide
+      - libelle: la période de revue est déclarée
+        sql: SELECT valeur FROM donnees.seuil s JOIN donnees.manifeste m USING (instance) WHERE m.niveau = 'meta' AND s.indicateur = 'periode_revue_cycles'
+        comparaison: non_vide
+      - libelle: chaque règle de rétroaction vise un seuil déclaré
+        sql: |
+          SELECT r.indicateur FROM donnees.retroaction r
+          LEFT JOIN donnees.seuil s ON s.instance = r.instance AND s.indicateur = r.indicateur
+          WHERE s.indicateur IS NULL
+        comparaison: vide
+      - libelle: corrections permises (rollback, mise_a_echelle, ticket)
+        sql: SELECT correction FROM donnees.retroaction WHERE correction NOT IN ('rollback', 'mise_a_echelle', 'ticket')
+        comparaison: vide
+      - libelle: chaque critère sans objet est un critère du modèle, justifié
+        sql: |
+          SELECT s.critere FROM donnees.sans_objet s
+          LEFT JOIN donnees.critere c ON c.id = s.critere
+          WHERE c.id IS NULL OR length(coalesce(s.justification, '')) < 10
+        comparaison: vide
+
+  - nom: "Journal : numérotation, clôture, contrat"
+    operations:
+      - libelle: numérotation continue depuis 0000, par instance
+        sql: |
+          SELECT bool_and(numero = rang - 1) FROM (
+            SELECT numero, row_number() OVER (PARTITION BY instance ORDER BY numero) AS rang FROM donnees.entree
+          ) x
+        attendu: true
+      - libelle: identifiant = <instance>-<numéro sur 4 chiffres>
+        sql: SELECT id FROM donnees.entree WHERE id IS DISTINCT FROM instance || '-' || lpad(numero::text, 4, '0')
+        comparaison: vide
+      - libelle: une entrée close finit après avoir commencé
+        sql: SELECT id FROM donnees.entree WHERE fin IS NOT NULL AND fin < debut
+        comparaison: vide
+      - libelle: une entrée ouverte au plus par instance
+        sql: SELECT instance FROM donnees.entree WHERE fin IS NULL GROUP BY instance HAVING count(*) > 1
+        comparaison: vide
+      - libelle: contrat_version dérivée de modele_version (versionnage)
+        sql: |
+          SELECT id FROM donnees.entree
+          WHERE contrat_version IS DISTINCT FROM CASE WHEN split_part(modele_version, '.', 1) = '0'
+                                                      THEN '0.' || split_part(modele_version, '.', 2)
+                                                      ELSE split_part(modele_version, '.', 1) END
+        comparaison: vide
+      - libelle: au contrat courant, un score par critère du modèle
+        sql: |
+          SELECT e.id FROM donnees.entree e, donnees.modele m
+          WHERE e.contrat_version = '0.' || split_part(m.version, '.', 2)
+            AND (SELECT count(*) FROM donnees.score s WHERE s.instance = e.instance AND s.numero = e.numero)
+                <> (SELECT count(*) FROM donnees.critere)
+        comparaison: vide
+
+  - nom: "Journal : synthèse recalculée en SQL, arrondi au pair"
+    description: Les moyennes du journal sont arrondies au pair (round de Python) ; round de PostgreSQL arrondit loin de zéro, d'où donnees.arrondi_pair.
+    operations:
+      - libelle: chaque moyenne = arrondi au pair de la moyenne des scores du terme
+        sql: |
+          SELECT s.instance, s.numero, s.terme FROM donnees.synthese s
+          LEFT JOIN (
+            SELECT sc.instance, sc.numero, c.terme, donnees.arrondi_pair(avg(sc.score), 2) AS moyenne
+            FROM donnees.score sc JOIN donnees.critere c ON c.id = sc.critere
+            WHERE sc.score IS NOT NULL GROUP BY 1, 2, 3
+          ) r ON r.instance = s.instance AND r.numero = s.numero AND r.terme = s.terme
+          WHERE s.moyenne IS DISTINCT FROM r.moyenne
+        comparaison: vide
+      - libelle: écarts = critères à score ≤ 1, dans l'ordre du modèle
+        sql: |
+          SELECT s.instance, s.numero, s.terme FROM donnees.synthese s
+          WHERE s.ecarts IS DISTINCT FROM ARRAY(
+            SELECT sc.critere FROM donnees.score sc JOIN donnees.critere c ON c.id = sc.critere
+            WHERE sc.instance = s.instance AND sc.numero = s.numero AND c.terme = s.terme AND sc.score <= 1
+            ORDER BY c.ordre)
+        comparaison: vide
+      - libelle: "la raison d'arrondi_pair : 1,125 donne 1,13 avec round, 1,12 au pair"
+        sql: SELECT round(1.125, 2) AS round, donnees.arrondi_pair(1.125, 2) AS au_pair
+        attendu: [{ round: 1.13, au_pair: 1.12 }]
+      - libelle: arrondi au pair sur les égalités exactes (k/8)
+        sql: SELECT array_agg(donnees.arrondi_pair(k / 8.0, 2) ORDER BY k) FROM generate_series(1, 7, 2) AS k
+        attendu: [0.12, 0.38, 0.62, 0.88]
+      - libelle: aucun score 3 hors CI (echelle.agregation)
+        sql: SELECT sc.critere FROM donnees.score sc JOIN donnees.entree e USING (instance, numero) WHERE NOT e.en_ci AND sc.score = 3
+        comparaison: vide
+
+  - nom: "Journal : sans objet du manifeste, contrôles consignés"
+    operations:
+      - libelle: à la dernière entrée, les critères sans objet du manifeste n'ont pas de score
+        sql: |
+          SELECT s.critere FROM donnees.sans_objet s
+          JOIN donnees.score sc ON sc.instance = s.instance AND sc.critere = s.critere
+           AND sc.numero = (SELECT max(numero) FROM donnees.entree e WHERE e.instance = s.instance)
+          WHERE sc.score IS NOT NULL
+        comparaison: vide
+      - libelle: une cause pour chaque erreur, et seulement pour elle
+        sql: SELECT instance, numero, critere, rang FROM donnees.controle_consigne WHERE (cause IS NOT NULL) <> (resultat = 'erreur')
+        comparaison: vide
+      - libelle: les résultats du protocole seulement
+        sql: SELECT DISTINCT resultat FROM donnees.controle_consigne WHERE resultat NOT IN ('conforme', 'partiel', 'absent', 'sans_objet', 'erreur')
+        comparaison: vide
+      - libelle: les types du protocole seulement
+        sql: |
+          SELECT DISTINCT cc.type FROM donnees.controle_consigne cc
+          LEFT JOIN donnees.type_controle t ON t.type = cc.type WHERE t.type IS NULL
+        comparaison: vide
+      - libelle: chaque contrôle hors compose a sa proposition au modèle
+        sql: |
+          SELECT DISTINCT cc.instance, cc.numero, cc.critere FROM donnees.controle_consigne cc
+          WHERE cc.cause = 'hors_compose' AND NOT EXISTS (
+            SELECT 1 FROM donnees.proposition p
+            WHERE p.instance = cc.instance AND p.numero = cc.numero AND p.critere = cc.critere AND p.nature = 'controle')
+        comparaison: vide
+
+  - nom: "Journal : mesures, décisions, propositions"
+    operations:
+      - libelle: une décision pour chaque mesure hors seuil (EQ.1)
+        sql: |
+          SELECT m.instance, m.numero, m.indicateur FROM donnees.mesure m
+          WHERE m.hors_seuil AND NOT EXISTS (
+            SELECT 1 FROM donnees.decision d WHERE d.instance = m.instance AND d.numero = m.numero AND d.indicateur = m.indicateur)
+        comparaison: vide
+      - libelle: chaque décision corrige par une correction permise
+        sql: SELECT instance, numero, rang FROM donnees.decision WHERE correction NOT IN ('rollback', 'mise_a_echelle', 'ticket')
+        comparaison: vide
+      - libelle: chaque proposition vise un critère du modèle
+        sql: SELECT p.critere FROM donnees.proposition p LEFT JOIN donnees.critere c ON c.id = p.critere WHERE c.id IS NULL
+        comparaison: vide
+      - libelle: natures de proposition permises
+        sql: SELECT DISTINCT nature FROM donnees.proposition WHERE nature NOT IN ('ajout', 'retrait', 'reformulation', 'controle')
+        comparaison: vide
+
+  - nom: "Recette : capacité, catalogue, rôle de lecture"
+    description: 16 opérations au plus par test, garanties par la base ; les requêtes de test passent par le rôle de lecture.
+    operations:
+      - libelle: seize opérations au plus par test
+        sql: SELECT test_id FROM recette.operation GROUP BY test_id HAVING count(*) > 16
+        comparaison: vide
+      - libelle: rangs contigus de 1 à n pour les tests définis en base
+        sql: |
+          SELECT o.test_id FROM recette.operation o JOIN recette.test t ON t.id = o.test_id
+          WHERE t.origine = 'base' GROUP BY o.test_id HAVING max(o.ordre) <> count(*)
+        comparaison: vide
+      - libelle: la campagne en cours est ouverte
+        sql: SELECT statut FROM recette.campagne ORDER BY id DESC LIMIT 1
+        attendu: en_cours
+      - libelle: la requête s'exécute en lecture seule
+        sql: SELECT current_setting('transaction_read_only')
+        attendu: 'on'
+      - libelle: sous le rôle de lecture
+        sql: SELECT current_user
+        attendu: recette_lecture
+
+  - nom: "Résolveur : arrondi au pair, parité Python"
+    description: round() de Python sur la valeur exacte du flottant ; 2,675 vaut 2,67499… en binaire.
+    operations:
+      - libelle: 1,125 (égalité exacte) → 1,12
+        fonction: arrondi
+        arguments: [1.125, 2]
+        attendu: 1.12
+      - libelle: 1,135 (au-dessus en binaire) → 1,14
+        fonction: arrondi
+        arguments: [1.135, 2]
+        attendu: 1.14
+      - libelle: 2,675 (en dessous en binaire) → 2,67
+        fonction: arrondi
+        arguments: [2.675, 2]
+        attendu: 2.67
+      - libelle: 0,375 → 0,38 (au pair)
+        fonction: arrondi
+        arguments: [0.375, 2]
+        attendu: 0.38
+      - libelle: 0,125 → 0,12 (au pair)
+        fonction: arrondi
+        arguments: [0.125, 2]
+        attendu: 0.12
+      - libelle: 2,5 → 2 (au pair)
+        fonction: arrondi
+        arguments: [2.5, 0]
+        attendu: 2
+      - libelle: 3,5 → 4 (au pair)
+        fonction: arrondi
+        arguments: [3.5, 0]
+        attendu: 4
+      - libelle: chiffres fixes 2,675 → « 2.67 »
+        fonction: fixe
+        arguments: [2.675, 2]
+        attendu: '2.67'
+      - libelle: chiffres fixes 1,5 → « 2 » (au pair)
+        fonction: fixe
+        arguments: [1.5, 0]
+        attendu: '2'
+
+  - nom: "Résolveur : format g des constats"
+    operations:
+      - libelle: 1 234 567 → 1.23457e+06
+        fonction: formatG
+        arguments: [1234567]
+        attendu: '1.23457e+06'
+      - libelle: 0,0001 → 0.0001
+        fonction: formatG
+        arguments: [0.0001]
+        attendu: '0.0001'
+      - libelle: 0,00001 → 1e-05
+        fonction: formatG
+        arguments: [0.00001]
+        attendu: '1e-05'
+      - libelle: 100 000 → 100000
+        fonction: formatG
+        arguments: [100000]
+        attendu: '100000'
+      - libelle: 1 000 000 → 1e+06
+        fonction: formatG
+        arguments: [1000000]
+        attendu: '1e+06'
+      - libelle: 24 → 24
+        fonction: formatG
+        arguments: [24]
+        attendu: '24'
+
+  - nom: "Résolveur : échappements ERE et shell"
+    operations:
+      - libelle: point et étoile échappés
+        fonction: echapperEre
+        arguments: [a.b*c]
+        attendu: 'a\.b\*c'
+      - libelle: groupes et alternative échappés
+        fonction: echapperEre
+        arguments: ['(x|y)']
+        attendu: '\(x\|y\)'
+      - libelle: apostrophe citée comme shlex.quote
+        fonction: quote
+        arguments: ["l'été"]
+        attendu: "'l'\"'\"'été'"
+      - libelle: mot simple laissé tel quel
+        fonction: quote
+        arguments: [simple]
+        attendu: simple
+      - libelle: texte vide cité
+        fonction: quote
+        arguments: ['']
+        attendu: "''"
+
+  - nom: "Résolveur : agrégation des résultats (echelle.agregation)"
+    operations:
+      - libelle: tous conformes hors CI → 2
+        fonction: agreger
+        arguments: [[{ resultat: conforme }], false]
+        attendu: 2
+      - libelle: tous conformes en CI → 3
+        fonction: agreger
+        arguments: [[{ resultat: conforme }], true]
+        attendu: 3
+      - libelle: en CI avec une déclaration → plafonné à 2
+        fonction: agreger
+        arguments: [[{ resultat: conforme }, { type: declaration, resultat: conforme }], true]
+        attendu: 2
+      - libelle: aucun conforme ni partiel → 0
+        fonction: agreger
+        arguments: [[{ resultat: absent }]]
+        attendu: 0
+      - libelle: échec heuristique → 1
+        fonction: agreger
+        arguments: [[{ type: motif, resultat: absent, heuristique: true }]]
+        attendu: 1
+      - libelle: contrôle en erreur → 1
+        fonction: agreger
+        arguments: [[{ resultat: erreur, cause: execution }]]
+        attendu: 1
+      - libelle: tous sans objet → null
+        fonction: agreger
+        arguments: [[{ resultat: sans_objet }]]
+        attendu: null
+      - libelle: conforme et absent → 1
+        fonction: agreger
+        arguments: [[{ resultat: conforme }, { resultat: absent }]]
+        attendu: 1
+
+  - nom: "Résolveur : combinaison pour_chaque"
+    operations:
+      - libelle: tous conformes → conforme
+        fonction: combiner
+        arguments: [commande, [{ resultat: conforme }, { resultat: conforme }]]
+        attendu: { type: commande, resultat: conforme, constat: 2/2 conformes }
+      - libelle: une partie → partiel, avec le constat de l'écart
+        fonction: combiner
+        arguments: [commande, [{ resultat: conforme }, { resultat: absent, constat: x }]]
+        attendu: { type: commande, resultat: partiel, constat: '1/2 conformes ; x' }
+      - libelle: tous en erreur → erreur, avec la cause
+        fonction: combiner
+        arguments: [commande, [{ resultat: erreur, cause: execution, constat: a }, { resultat: erreur, cause: execution, constat: b }]]
+        attendu: { type: commande, resultat: erreur, constat: '0/2 conformes ; a | b', cause: execution }
+      - libelle: liste vide → sans objet
+        fonction: combiner
+        arguments: [commande, []]
+        attendu: { type: commande, resultat: sans_objet, constat: rien à examiner }
+
+  - nom: "Modèle : viabilité (finalite.viabilite)"
+    description: Viable si aucun des six critères de la boucle ne baisse ; en progrès si l'un monte.
+    operations:
+      - libelle: un seul cycle → pas de jugement
+        fonction: viabilite
+        arguments: [[{ scores: { EX.1: { score: 1 } } }]]
+        attendu: null
+      - libelle: EX.1 monte → viable et en progrès
+        fonction: viabilite
+        arguments: [[{ scores: { EX.1: { score: 0 } } }, { scores: { EX.1: { score: 1 } } }]]
+        attendu: { viable: true, progresse: true }
+      - libelle: rien ne bouge → viable, sans progrès
+        fonction: viabilite
+        arguments: [[{ scores: { EX.1: { score: 1 } } }, { scores: { EX.1: { score: 1 } } }]]
+        attendu: { viable: true, progresse: false }
+      - libelle: EQ.2 baisse → non viable
+        fonction: viabilite
+        arguments: [[{ scores: { EQ.2: { score: 2 } } }, { scores: { EQ.2: { score: 1 }, EX.1: { score: 3 } } }]]
+        attendu: { viable: false, progresse: false }
+      - libelle: un critère hors de la boucle ne compte pas
+        fonction: viabilite
+        arguments: [[{ scores: { '3.1': { score: 3 } } }, { scores: { '3.1': { score: 0 } } }]]
+        attendu: { viable: true, progresse: false }
+
+  - nom: "Modèle : assertions du manifeste (IN.1, EQ.1, EX.2)"
+    operations:
+      - libelle: IN.1 — axiome, cycle et contrats exemptés
+        fonction: assertion
+        arguments: [IN.1, manifeste, { invariants: [axiome, cycle, contrats] }]
+        attendu: true
+      - libelle: IN.1 — contrats manquant
+        fonction: assertion
+        arguments: [IN.1, manifeste, { invariants: [axiome, cycle] }]
+        attendu: false
+      - libelle: EQ.1 — chaque seuil a sa correction
+        fonction: assertion
+        arguments: [EQ.1, manifeste, { seuils: { periode_revue_cycles: { valeur: 3 }, delai: { valeur: 24 } }, retroaction: [{ indicateur: delai, correction: ticket }] }]
+        attendu: true
+      - libelle: EQ.1 — correction hors liste
+        fonction: assertion
+        arguments: [EQ.1, manifeste, { seuils: { delai: { valeur: 24 } }, retroaction: [{ indicateur: delai, correction: redemarrer }] }]
+        attendu: false
+      - libelle: EX.2 — un seuil requis manque
+        fonction: assertion
+        arguments: [EX.2, manifeste, { seuils: { delai: { valeur: 24 } } }, { requis: [temps_demarrage_s] }]
+        attendu: false
+      - libelle: EX.2 — seuils requis présents
+        fonction: assertion
+        arguments: [EX.2, manifeste, { seuils: { delai: { valeur: 24 } } }, { requis: [delai] }]
+        attendu: true
+
+  - nom: "Modèle : assertions du journal (EV.1, EV.2, EQ.1)"
+    operations:
+      - libelle: EV.1 — un seul cycle → pas de jugement
+        fonction: assertion
+        arguments: [EV.1, journal, [{ cycle: { contrat_version: '0.2', fin: x }, release: r, mesures: [], incidents: [] }], { contrat: '0.2' }]
+        attendu: null
+      - libelle: EV.1 — deux cycles comparables et complets
+        fonction: assertion
+        arguments: [EV.1, journal, [{ cycle: { contrat_version: '0.2', fin: x }, release: r, mesures: [], incidents: [] }, { cycle: { contrat_version: '0.2', fin: y }, release: s, mesures: [], incidents: [] }], { contrat: '0.2' }]
+        attendu: true
+      - libelle: EV.1 — depuis le contrat 0.5, une entrée d'instance cite son ticket
+        fonction: assertion
+        arguments: [EV.1, journal, [{ cycle: { contrat_version: '0.4', fin: x }, release: r, mesures: [], incidents: [] }, { cycle: { contrat_version: '0.5', niveau: instance, fin: y }, release: s, mesures: [], incidents: [] }]]
+        attendu: false
+      - libelle: EV.2 — baisse non rattachée à une release
+        fonction: assertion
+        arguments: [EV.2, journal, [{ cycle: { contrat_version: '0.2' }, scores: { '3.1': { score: 2 } }, regressions: [] }, { cycle: { contrat_version: '0.2' }, scores: { '3.1': { score: 1 } }, regressions: [] }], { contrat: '0.2' }]
+        attendu: false
+      - libelle: EQ.1 — mesure hors seuil sans décision
+        fonction: assertion
+        arguments: [EQ.1, journal, [{ mesures: [{ indicateur: d, hors_seuil: true }], decisions: [] }]]
+        attendu: false
+      - libelle: EQ.1 — mesure hors seuil suivie d'une décision
+        fonction: assertion
+        arguments: [EQ.1, journal, [{ mesures: [{ indicateur: d, hors_seuil: true }], decisions: [{ indicateur: d }] }]]
+        attendu: true
+
+  - nom: "Résolveur : présence d'un champ (requiert)"
+    operations:
+      - libelle: <nom> vaut toute clé d'environnement
+        fonction: champPresent
+        arguments: [{ environnements: { prod: { release_deployee: x } } }, environnements.<nom>.release_deployee]
+        attendu: true
+      - libelle: champ absent
+        fonction: champPresent
+        arguments: [{}, seuils.periode_revue_cycles]
+        attendu: false
+      - libelle: un texte vide n'est pas renseigné
+        fonction: present
+        arguments: ['']
+        attendu: false
+      - libelle: une liste vide n'est pas renseignée
+        fonction: present
+        arguments: [[]]
+        attendu: false
+      - libelle: une table vide n'est pas renseignée
+        fonction: present
+        arguments: [{}]
+        attendu: false
+      - libelle: zéro est une valeur
+        fonction: present
+        arguments: [0]
+        attendu: true
+      - libelle: faux est une valeur
+        fonction: present
+        arguments: [false]
+        attendu: true
+
+  - nom: "Sûreté : jq sans accès à l'environnement du lanceur"
+    description: Aucune URL de connexion ni mot de passe ne peut fuir dans un résultat d'opération.
+    operations:
+      - libelle: env ne voit que PATH
+        fonction: jq
+        arguments: ['env | keys']
+        attendu: [PATH]
+      - libelle: $ENV ne voit que PATH
+        fonction: jq
+        arguments: ['$ENV | keys']
+        attendu: [PATH]
+      - libelle: $m et $requis sont fournis
+        fonction: jq
+        arguments: ['[$m.a, $requis[0]]', null, { m: { a: 1 }, requis: [x] }]
+        attendu: [1, x]
+      - libelle: plusieurs valeurs rendues forment une liste
+        fonction: jq
+        arguments: ['.[]', [1, 2]]
+        attendu: [1, 2]

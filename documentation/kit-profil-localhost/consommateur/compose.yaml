@@ -1,0 +1,19 @@
+# Rang N+1 : une autre application attache le service exposé par le rang N (FR.1).
+# Normalement dans son propre dépôt, avec sa propre grille : la même cellule, un rang plus haut.
+# Épreuve : docker compose -f consommateur/compose.yaml run --rm smoke
+name: consommateur
+
+services:
+  smoke:
+    image: curlimages/curl:8.22.0
+    entrypoint: ["sh", "-c"]
+    command: ['curl -fsS --max-time 5 "$${APP_API_URL}$${APP_HEALTH_PATH}"']
+    environment:
+      APP_API_URL: ${APP_API_URL:-http://app-api:8080}   # son Espace (4) : une URL, rien d'autre
+      APP_HEALTH_PATH: ${APP_HEALTH_PATH:-/health}
+    networks:
+      - contrats
+
+networks:
+  contrats:
+    external: true

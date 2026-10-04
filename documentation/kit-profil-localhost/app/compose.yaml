@@ -1,0 +1,103 @@
+# Socle commun aux deux environnements (10.1) : mêmes services, mêmes versions.
+# Ne se lance jamais seul : scripts/compose.sh dev|prod ajoute la surcouche.
+
+x-app: &app
+  # Une seule image pour web, worker, scheduler et tâches d'admin (8.2, 12.1).
+  image: ${REGISTRY:?}/${OWNER:?}/${IMAGE_NAME:?}:${APP_TAG:?tag de release absent, passer par scripts/deploy.sh}
+  init: true                     # PID 1 relaie SIGTERM au processus (9.2)
+  read_only: true                # aucune écriture locale (6.1, 6.2, 11.1)
+  tmpfs:
+    - /tmp
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  stop_grace_period: 30s         # 9.2 : délai d'arrêt, aligné sur 7e/seuils.json
+  environment:
+    PORT: ${PORT:?}                                    # 7.2
+    DATABASE_URL: ${DATABASE_URL:-mysql://${DB_USER:?}:${DB_PASSWORD:?}@db:3306/${DB_NAME:?}}  # 4.1
+    REDIS_URL: ${REDIS_URL:?}                          # 4.1
+    SMTP_URL: ${SMTP_URL:?}                            # 4.1
+    SECRET_KEY: ${SECRET_KEY:?}                        # 3.2 : jamais dans le dépôt
+    LOG_LEVEL: ${LOG_LEVEL:-info}
+  depends_on:
+    db:
+      condition: service_healthy
+    cache:
+      condition: service_healthy
+  restart: unless-stopped
+
+services:
+  proxy:
+    # Seul port publié de l'application ; répartit sur les répliques de web (8.1).
+    image: nginxinc/nginx-unprivileged:1.30.5-alpine
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    volumes:
+      - ./proxy/default.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "127.0.0.1:${HTTP_PORT:?}:8080"
+    depends_on:
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    <<: *app
+    command: ["web"]
+    healthcheck:
+      test: ["CMD", "/app/bin/run", "health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 60s
+      start_interval: 1s         # sondes rapprochées au démarrage (Docker Engine 25+)
+
+  worker:
+    <<: *app
+    command: ["worker"]
+
+  scheduler:
+    <<: *app
+    command: ["scheduler"]       # une seule instance : ne jamais le mettre à l'échelle
+
+  db:
+    image: mysql:8.4.11
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:?}
+      MYSQL_USER: ${DB_USER:?}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?}
+    volumes:
+      - db:/var/lib/mysql        # l'état vit dans les services attachés (6.2)
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  cache:
+    image: redis:7.4.11-alpine
+    command: ["redis-server", "--appendonly", "yes"]   # la file de tâches survit à un redémarrage (9.3)
+    volumes:
+      - cache:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:v1.31.3
+    ports:
+      - "127.0.0.1:${MAIL_UI_PORT:?}:8025"
+    restart: unless-stopped
+
+volumes:
+  db:
+  cache:

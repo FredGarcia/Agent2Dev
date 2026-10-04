@@ -1,0 +1,9 @@
+# ~/.config/systemd/user/7e-cycle.service : un cycle 7E sur la prod locale
+[Unit]
+Description=Cycle 7E de la prod locale
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/src/app
+EnvironmentFile=-%h/.config/7e/gitea.env
+ExecStart=%h/src/app/scripts/7e-cycle.sh prod

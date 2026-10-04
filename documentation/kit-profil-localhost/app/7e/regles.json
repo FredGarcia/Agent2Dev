@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "principe": "À effet égal, la correction réversible : celle qui laisse le plus de choix au cycle suivant.",
+  "regles": [
+    { "id": "R1", "si": "release non saine au déploiement",                      "alors": "retour_arriere",       "auto": true,  "criteres": ["5.3", "EQ.1"] },
+    { "id": "R2", "si": "indicateur hors seuil après une nouvelle release",      "alors": "retour_arriere",       "auto": true,  "criteres": ["EV.2", "EQ.1"] },
+    { "id": "R3", "si": "indicateur hors seuil sans nouvelle release",           "alors": "ticket",               "auto": true,  "criteres": ["EQ.1"] },
+    { "id": "R4", "si": "critère passé de ok à écart",                           "alors": "ticket",               "auto": true,  "criteres": ["EQ.1"] },
+    { "id": "R5", "si": "seuil en calibrage",                                    "alors": "proposition_de_seuil", "auto": false, "criteres": ["EX.2", "EQ.2"] }
+  ]
+}

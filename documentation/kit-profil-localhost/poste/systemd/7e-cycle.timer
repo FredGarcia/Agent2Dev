@@ -1,0 +1,10 @@
+# ~/.config/systemd/user/7e-cycle.timer : chaque jour, rattrapé au démarrage si WSL était arrêté
+[Unit]
+Description=Cycle 7E quotidien
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target

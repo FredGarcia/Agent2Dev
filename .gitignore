@@ -1,0 +1,4 @@
+.env
+.env.recette
+# node_modules : répertoire ici, lien symbolique dans les conteneurs de recette
+node_modules

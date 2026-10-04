@@ -1,0 +1,375 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  recette/workflows.yaml : les workflows que l'interface reflète
+# ═══════════════════════════════════════════════════════════════════════════
+#
+#  Deux projets :
+#    meta-12f-7e  le méta-projet, sur ses données réelles. Ses workflows
+#                 tournent (résolveur, recette) ; un déclencheur de type
+#                 interface porte l'action qu'il demande à l'exécuteur
+#                 (recette/pilotage.mjs : campagne, valider, cycle, charger).
+#    binome       le binôme cybernétique 7E × 12 facteurs, d'après sa
+#                 spécification ratifiée : rien ne tourne encore, n8n n'est pas
+#                 installé.
+#                 Cet extrait suit la révision citée ; il se met à jour avec elle.
+#
+#  Un workflow de nature ci renvoie à son fichier (.gitea/workflows/…) : ses
+#  déclencheurs et ses étapes y sont lus, pas recopiés ici. Celui de nature
+#  cycle prend pour étapes les phases du modèle (cycle.phases).
+#
+#  Types de déclencheur : poussee, manuel_forge, planifie, commande, script,
+#  workflow, interface, evenement, message.
+#
+#  Chargé à chaque campagne et à chaque « Recharger les données » dans
+#  donnees.document (nature workflows). Ni clé n, y, on ou off, ni date nue :
+#  YAML 1.1 les lirait autrement que YAML 1.2.
+
+version: 1
+
+projets:
+  - id: meta-12f-7e
+    nom: Méta-projet 12 facteurs × 7E
+    origine: depot
+    resume: Le modèle exécutif, son résolveur et sa recette ; il s'exécute d'abord sur lui-même.
+    workflows:
+      - id: cycle-7e
+        nom: Cycle 7E
+        nature: cycle
+        executant: le résolveur, le pipeline du projet, une personne
+        resume: Les sept phases du modèle, d'Évaluer à Équilibrer ; Émettre écrit l'entrée de journal.
+        source: modele-executif-12f-7e.yaml (cycle.phases)
+        declencheurs:
+          - type: workflow
+            detail: par le workflow Cycle 7E en CI, qui clôt l'entrée et la versionne
+            workflow: ci-cycle-7e
+          - type: commande
+            detail: node resolveur7e.mjs cycle, puis proposer et clore ; ou l'image du résolveur
+          - type: interface
+            detail: cycle à blanc sur une copie du dépôt ; l'entrée reste dans la demande, jamais au journal
+            action: cycle
+
+      - id: ci-cycle-7e
+        nom: Cycle 7E en CI
+        nature: ci
+        fichier: .gitea/workflows/cycle-7e.yml
+        executant: runner Gitea, dans l'image du résolveur
+        etat: prêt, pas encore exécuté ; Gitea, sorti du backlog le 4 octobre, n'est pas encore installé
+
+      - id: valider
+        nom: Évaluer seul
+        nature: commande
+        commande: node resolveur7e.mjs valider
+        executant: le résolveur
+        resume: Modèle, manifeste, release, CI et outils, sans examiner ni écrire au journal.
+        etapes:
+          - Lire le modèle et le manifeste, vérifier la version épinglée
+          - Identifier la release et la CI, recenser les outils
+          - Signaler un dépôt modifié depuis le dernier commit
+        declencheurs:
+          - type: commande
+            detail: node resolveur7e.mjs valider
+          - type: interface
+            detail: sur une copie fraîche du dépôt
+            action: valider
+
+      - id: campagne
+        nom: Campagne de recette
+        nature: commande
+        commande: node recette/lancer.mjs campagne
+        executant: le lanceur de recette
+        resume: Les suites node:test du dépôt et les tests définis en base, rangés dans PostgreSQL opération par opération.
+        etapes:
+          - Migrer la base, ouvrir la campagne (commit, modèle, machine, démon Docker)
+          - Recharger les fichiers YAML du dépôt (modèle, manifestes, journal, workflows)
+          - Lancer les suites node:test, seize opérations au plus par test
+          - Exécuter les tests définis en base (SQL en lecture seule, fonctions)
+          - Charger les résultats et clore la campagne
+        declencheurs:
+          - type: commande
+            detail: docker compose -f compose.recette.yaml --env-file .env.recette run --rm recette campagne
+          - type: script
+            detail: vm/preparer-vm.sh lance une première campagne si aucune n'a eu lieu
+          - type: interface
+            detail: depuis la page Déclencheurs, avec son libellé
+            action: campagne
+
+      - id: charger
+        nom: Recharger les données du dépôt
+        nature: commande
+        executant: l'exécuteur
+        resume: Le modèle, les manifestes, le journal et les workflows, relus sans lancer de test.
+        etapes:
+          - Recopier l'état courant du dépôt
+          - Relire les fichiers YAML et les workflows de CI
+          - Remplacer les documents chargés, en une transaction
+        declencheurs:
+          - type: interface
+            detail: après un git pull sur la VM, pour voir le nouveau journal sans campagne
+            action: charger
+
+      - id: preparer-vm
+        nom: Préparation de la VM de recette
+        nature: script
+        fichier: vm/preparer-vm.sh
+        executant: root sur la VM Ubuntu
+        resume: Docker, secrets, image, base, interface, exécuteur, première campagne ; relancé, ne refait que ce qui manque.
+        etapes:
+          - Installer Docker Engine et Compose depuis le dépôt apt de Docker
+          - Écrire .env.recette, mots de passe tirés au hasard
+          - Construire l'image, démarrer la base, l'interface et l'exécuteur
+          - Importer les tests définis si la base n'en a aucun, lancer une première campagne
+        declencheurs:
+          - type: commande
+            detail: sudo vm/preparer-vm.sh
+
+  - id: binome
+    nom: Binôme cybernétique 7E × 12 facteurs
+    origine: specification
+    source: document Claude Docs « Binôme cybernétique 7E × 12 facteurs — orchestration n8n », révision 43
+    etat: spécification ratifiée le 4 octobre 2026 ; n8n n'est pas installé, rien ne tourne encore
+    resume: Deux systèmes d'agents, Agent2Dev (dev) et Agent2Test (test), que n8n relie sans jamais juger à leur place ; un Gitea local garde la trace et l'état.
+    workflows:
+      - id: W00
+        nom: greffe
+        nature: n8n
+        transverse: true
+        executant: n8n
+        resume: Valide chaque message contre le schéma, l'inscrit dans Gitea, écarte les doublons par id.
+        declencheurs:
+          - type: message
+            detail: chaque message reçu, webhook Gitea ou retour d'un agent
+
+      - id: W01
+        nom: cycle-declencher
+        nature: n8n
+        executant: le résolveur, en CI
+        par_phase:
+          - phase: evaluer
+            echanges: "orchestrateur → CI : lancement du cycle (workflow_dispatch)"
+            garde: un seul cycle par release ; aucun cycle tant qu'une entrée est ouverte
+        declencheurs:
+          - type: evenement
+            detail: release prête, tag publié ou fusion sur la branche principale
+          - type: planifie
+            detail: planification
+
+      - id: W02
+        nom: journal-recevoir
+        nature: n8n
+        executant: le résolveur, puis le système dev
+        par_phase:
+          - phase: elaborer
+            echanges: "orchestrateur → dev : une tâche par ligne du plan, dans l'ordre du plan"
+            garde: aucune tâche ne vise l'organisation ni un contrat (IN.1)
+          - phase: evoluer
+            echanges: "orchestrateur → dev : une tâche « corriger » par régression, liée à la PR qui a produit la release (EV.2)"
+            garde: seules les régressions écrites au journal ouvrent une tâche
+          - phase: emettre
+            echanges: "orchestrateur → dev et test : rapport"
+            garde: l'entrée reste la seule source ; le rapport la résume et la cite
+        declencheurs:
+          - type: evenement
+            detail: entrée de journal poussée (journal/**)
+
+      - id: W03
+        nom: tache-dev
+        nature: n8n
+        executant: le système dev, puis le pipeline du projet
+        par_phase:
+          - phase: executer
+            echanges: "dev → test : livraison ; orchestrateur : contrôle du périmètre, ouverture de la PR"
+            garde: une seule chaîne ; dev pousse sur une branche, jamais sur la branche principale
+        declencheurs:
+          - type: message
+            detail: tâche prise en charge par dev
+
+      - id: W04
+        nom: examen-test
+        nature: n8n
+        executant: le système test (tests d'acceptation, résolveur examiner sur la PR, CI)
+        par_phase:
+          - phase: examiner
+            echanges: "test → dev : verdict"
+            garde: le verdict n'appartient qu'au système test
+        declencheurs:
+          - type: evenement
+            detail: PR ouverte par W03
+
+      - id: W05
+        nom: integrer
+        nature: n8n
+        executant: l'orchestrateur, ou une personne à la mission
+        par_phase:
+          - phase: examiner
+            echanges: "si accepté et CI verte : fusion par n8n pour un projet personnel, sollicitation de fusion à la mission"
+            garde: aucune fusion sans verdict accepté ni CI verte ; à la mission, aucune fusion sans une personne
+        declencheurs:
+          - type: message
+            detail: verdict accepté, CI verte
+
+      - id: W06
+        nom: equilibrer
+        nature: n8n
+        executant: le résolveur, puis le système test
+        par_phase:
+          - phase: equilibrer
+            echanges: "décisions appliquées (ticket → tâche, rollback → déploiement de la release précédente) ; test → orchestrateur : proposition ; orchestrateur → CI : proposer, puis clore"
+            garde: seules les décisions du journal s'appliquent ; Équilibrer bloquée ne donne que des tickets ; l'entrée est close à l'échéance, propositions ou non
+        declencheurs:
+          - type: evenement
+            detail: entrée ouverte reçue
+
+      - id: W07
+        nom: meta-remonter
+        nature: n8n
+        executant: l'orchestrateur
+        par_phase:
+          - phase: bouclage
+            echanges: "orchestrateur → méta : PR de l'entrée dans journal/<instance>/, une issue de ratification par proposition"
+            garde: une entrée close n'est jamais réécrite ; la ratification (EQ.2) reste humaine
+        declencheurs:
+          - type: evenement
+            detail: entrée close
+
+      - id: W08
+        nom: questions
+        nature: n8n
+        transverse: true
+        executant: n8n
+        resume: Relaie les questions entre dev et test, dans la limite du catalogue.
+        declencheurs:
+          - type: message
+            detail: question de dev ou de test, pendant « en cours » ou « en examen »
+
+      - id: W09
+        nom: reconcilier
+        nature: n8n
+        transverse: true
+        executant: n8n
+        resume: Repère les tâches arrêtées et les échéances passées ; relance ou escalade ; rappelle les attentes d'une personne, sans jamais les escalader.
+        declencheurs:
+          - type: planifie
+            detail: à intervalle fixe
+
+      - id: W10
+        nom: erreurs
+        nature: n8n
+        transverse: true
+        executant: n8n
+        resume: Reçoit les erreurs des autres workflows et les traite comme des messages erreur.
+        declencheurs:
+          - type: evenement
+            detail: erreur levée par un autre workflow
+
+      - id: W11
+        nom: personnes
+        nature: n8n
+        transverse: true
+        executant: n8n, puis une personne
+        resume: Adresse les sollicitations aux personnes, reçoit leurs décisions et fait repartir la tâche en attente.
+        declencheurs:
+          - type: message
+            detail: "point humain atteint : ratifier, valider, arbitrer, session SSO, fusionner, auditer"
+          - type: message
+            detail: décision d'une personne
+
+    taches:
+      portees_par: "labels binome/etat:* et binome/iteration:n sur l'issue de la tâche"
+      etats:
+        - { id: a_faire, nom: à faire }
+        - { id: en_cours, nom: en cours }
+        - { id: livree, nom: livrée }
+        - { id: en_examen, nom: en examen }
+        - { id: acceptee, nom: acceptée }
+        - { id: integree, nom: intégrée, final: true }
+        - { id: refusee, nom: refusée }
+        - { id: attente, nom: en attente d'une personne }
+        - { id: escaladee, nom: escaladée, final: true }
+      transitions:
+        - { de: a_faire, vers: en_cours, sur: accusé dev }
+        - { de: en_cours, vers: livree, sur: livraison }
+        - { de: livree, vers: en_examen, sur: accusé test }
+        - { de: en_examen, vers: acceptee, sur: verdict accepté }
+        - { de: acceptee, vers: integree, sur: "CI verte, n8n fusionne (projet personnel) ; puis cycle 7E sur la release" }
+        - { de: acceptee, vers: attente, sur: "à la mission : la fusion attend une personne" }
+        - { de: attente, vers: integree, sur: "fusion humaine ; puis cycle 7E sur la release" }
+        - { de: en_examen, vers: refusee, sur: verdict refusé }
+        - { de: refusee, vers: en_cours, sur: "refus 1 ou 2 : corriger" }
+        - { de: refusee, vers: escaladee, sur: "3e refus : escalade" }
+      attente: "la session SSO absente, la contestation d'un refus et l'audit à la clôture passent aussi par l'attente : la décision d'une personne ramène la tâche là où elle allait"
+      natures:
+        - { id: cycle7e, phase: evaluer, executant: ci, delai: 30m, relances: 1 }
+        - { id: cadrer, phase: elaborer, executant: dev, delai: 4h, relances: 1 }
+        - { id: implementer, phase: executer, executant: dev, delai: 4h, relances: 1 }
+        - { id: corriger, phase: executer, executant: dev, delai: 2h, relances: 1 }
+        - { id: examiner, phase: examiner, executant: test, delai: 1h, relances: 1 }
+        - { id: proposer, phase: equilibrer, executant: test, delai: 30m, relances: 0 }
+        - { id: equilibrer, phase: equilibrer, executant: ci, delai: 15m, relances: 2 }
+      limites:
+        iterations_par_tache: 3
+        questions_par_tache: 2
+        campagnes_simultanees: 1
+        echeance_cloture: 2h
+      personnes: [ratifier, valider, arbitrer, session_sso, fusionner, auditer]
+      note: délais et limites ratifiés le 4 octobre 2026 (décision 3) ; chaque tête garde ses budgets internes
+
+    decisions:
+      - numero: 1
+        decision: Milieu des échanges
+        proposition: "Gitea local (issues, PR, labels), n8n en greffier ; à la mission, une personne pousse la branche prête vers GitLab"
+        autre_voie: messages directs entre agents, ou file de messages (Redis Streams) ; le GitLab de la mission comme milieu
+        statut: ratifiee
+        ratifiee_le: "2026-10-04"
+      - numero: 2
+        decision: Forme des systèmes d'agents
+        proposition: "deux services HTTP derrière le contrat, implémentation libre : Agent2Dev et Agent2Test"
+        autre_voie: "agents dans n8n (nœuds AI Agent) : un seul outil, mais logique et prompts dans n8n"
+        statut: ratifiee
+        ratifiee_le: "2026-10-03"
+      - numero: 3
+        decision: Limites par tâche
+        proposition: 3 itérations, 2 questions, 1 relance, dans le catalogue ; budgets internes dans chaque tête
+        autre_voie: d'autres valeurs, par nature de tâche
+        statut: ratifiee
+        ratifiee_le: "2026-10-04"
+      - numero: 4
+        decision: Indépendance du test
+        proposition: livraison = faits, verdict = preuves ; le test ne voit pas le raisonnement du dev ; audit par échantillon à chaque clôture
+        autre_voie: échanges libres entre agents
+        statut: ratifiee
+        ratifiee_le: "2026-10-04"
+      - numero: 5
+        decision: Autorité de fusion
+        proposition: à la mission, une personne ; pour les projets personnels, n8n, sur verdict accepté et CI verte
+        autre_voie: fusion par n8n partout
+        statut: ratifiee
+        ratifiee_le: "2026-10-04"
+      - numero: 6
+        decision: Porte de livraison
+        proposition: résolveur examiner sur chaque PR d'un projet instance du modèle, en plus des tests d'acceptation
+        autre_voie: tests seuls avant fusion, cycle 7E après
+        statut: ratifiee
+        ratifiee_le: "2026-10-04"
+      - numero: 7
+        decision: Fichiers soumis à ratification
+        proposition: "7e-instance.yaml, binome.yaml, .gitea/**, et la chaîne de construction : pom.xml, package.json et son verrou, Dockerfile, compose, CI"
+        autre_voie: les ouvrir aux agents dans leur périmètre
+        statut: ratifiee
+        ratifiee_le: "2026-10-04"
+      - numero: 8
+        decision: Points humains
+        proposition: "EQ.2 au rang méta, changements de contrat, escalades, et ceux du cadrage EDF : critères avant la clôture, arbitrage, gouvernance, session SSO, audit par échantillon, fusion à la mission"
+        autre_voie: escalades seules, EQ.2 confiée au système test
+        statut: ratifiee
+        ratifiee_le: "2026-10-04"
+      - numero: 9
+        decision: Version du modèle épinglée
+        proposition: v0.2.1, premier tag publié, pour les projets instances du modèle
+        autre_voie: 0.2.1 sans tag, en attendant la publication
+        statut: ratifiee
+        ratifiee_le: "2026-10-04"
+      - numero: 10
+        decision: Installation de n8n
+        proposition: édition communautaire 2.x auto-hébergée, Postgres, mode normal
+        autre_voie: mode queue dès le départ ; édition Business pour le contrôle de source Git
+        statut: ratifiee
+        ratifiee_le: "2026-10-04"

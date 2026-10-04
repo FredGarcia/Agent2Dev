@@ -1,0 +1,49 @@
+# Rang N-1 : la plateforme d'observation du poste (EX.1), un projet Compose à part.
+# Alloy lit les journaux de tous les conteneurs par l'API Docker, Loki les garde, Grafana les montre.
+# Lancement : docker compose -f observabilite/compose.yaml up -d --wait
+name: observabilite
+
+services:
+  loki:
+    image: grafana/loki:3.7.8          # configuration locale fournie par l'image
+    ports:
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - loki:/loki
+    restart: unless-stopped
+
+  alloy:
+    image: grafana/alloy:v1.20.1       # successeur de Promtail (fin de vie le 2 mars 2026)
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - alloy:/var/lib/alloy/data      # positions de lecture : rien n'est relu deux fois
+    ports:
+      - "127.0.0.1:12345:12345"
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:13.2.3
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"   # lecture seule sans compte, sur 127.0.0.1 uniquement
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+      - grafana:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3001:3000"          # 3000 est pris par Gitea
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+volumes:
+  loki:
+  alloy:
+  grafana:

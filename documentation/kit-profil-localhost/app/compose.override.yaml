@@ -1,0 +1,22 @@
+# Développement : le même socle, construit depuis les sources du poste.
+# Les sources sont montées pour le rechargement à chaud : dépôt sur l'ext4 de WSL, jamais sous /mnt/c.
+
+x-dev: &dev
+  build:
+    context: .
+    target: dev
+    network: host                # le build atteint le registre de paquets Gitea (1.2)
+  volumes:
+    - ./:/app
+
+services:
+  web:
+    <<: *dev
+    environment:
+      WEB_RELOAD: "1"            # lu par bin/run : rechargement à chaud en dev seulement
+
+  worker:
+    <<: *dev
+
+  scheduler:
+    <<: *dev

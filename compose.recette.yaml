@@ -1,0 +1,130 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  compose.recette.yaml : la pile de recette du méta-projet 12 facteurs × 7E
+# ═══════════════════════════════════════════════════════════════════════════
+#
+#  base       PostgreSQL 16 (volume recette-donnees) ; aucun port publié
+#  interface  l'interface : données de recette, workflows, déclencheurs, suivi,
+#             sur 127.0.0.1:8080 de la VM
+#  executeur  exécute les demandes que l'interface dépose (campagne, valider,
+#             cycle à blanc, recharger les données), une à une, sur une copie
+#             fraîche du dépôt
+#  recette    le lanceur, à la demande (profil outils) :
+#               docker compose -f compose.recette.yaml --env-file .env.recette run --rm recette campagne
+#               … run --rm recette importer | exporter | etat | comparer 3 4 | migrer
+#
+#  Préparer la VM : sudo vm/preparer-vm.sh (Docker, .env.recette, démarrage,
+#  import des tests définis, première campagne). Variables : .env.recette.example.
+#
+#  L'exécuteur et le lanceur montent le socket du démon Docker de la VM : les
+#  tests qui exigent un vrai démon (scénario compose réel) s'y exécutent. C'est
+#  leur donner la main sur la VM, acceptable sur une VM dédiée à la recette ;
+#  retirer le montage omet ces tests, avec leur motif. L'interface n'a jamais ce
+#  socket : elle ne peut demander que les actions de la liste blanche
+#  (recette/pilotage.mjs), que la base vérifie aussi.
+
+name: recette-7e
+
+x-connexion: &connexion
+  RECETTE_PG_URL: postgres://recette:${RECETTE_MOT_DE_PASSE:?absent de .env.recette (voir .env.recette.example)}@base:5432/recette
+  RECETTE_PG_LECTURE_URL: postgres://recette_lecture:${RECETTE_LECTURE_MOT_DE_PASSE:?absent de .env.recette (voir .env.recette.example)}@base:5432/recette
+  RECETTE_DELAI_SQL_MS: ${RECETTE_DELAI_SQL_MS:-5000}
+  TZ: ${TZ:-Europe/Paris}
+
+x-image: &image
+  build:
+    context: .
+    dockerfile: Dockerfile.recette
+  image: recette-7e:local
+
+services:
+  base:
+    image: postgres:16.15-trixie
+    environment:
+      POSTGRES_DB: recette
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${PG_MOT_DE_PASSE_ADMIN:?absent de .env.recette (voir .env.recette.example)}
+      RECETTE_MOT_DE_PASSE: ${RECETTE_MOT_DE_PASSE:?absent de .env.recette}
+      RECETTE_LECTURE_MOT_DE_PASSE: ${RECETTE_LECTURE_MOT_DE_PASSE:?absent de .env.recette}
+      TZ: ${TZ:-Europe/Paris}
+    volumes:
+      - recette-donnees:/var/lib/postgresql/data
+      # Rôles recette et recette_lecture, au premier démarrage seulement
+      - ./recette/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d recette"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  interface:
+    <<: *image
+    command: ["interface"]
+    user: node
+    environment:
+      <<: *connexion
+      INTERFACE_HOTE: 0.0.0.0
+      INTERFACE_PORT: "8080"
+      INTERFACE_UTILISATEUR: ${INTERFACE_UTILISATEUR:-}
+      INTERFACE_MOT_DE_PASSE: ${INTERFACE_MOT_DE_PASSE:-}
+      INTERFACE_HOTES_PERMIS: ${INTERFACE_HOTES_PERMIS:-}
+    volumes:
+      - .:/depot:ro
+    tmpfs:
+      - /tmp
+    read_only: true
+    ports:
+      # 127.0.0.1 seulement : l'interface n'est joignable que depuis la VM
+      # (ou par un tunnel : ssh -L 8080:127.0.0.1:8080 utilisateur@vm)
+      - "127.0.0.1:${INTERFACE_PORT:-8080}:8080"
+    depends_on:
+      base:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/sante').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    restart: unless-stopped
+
+  executeur:
+    <<: *image
+    command: ["executeur"]
+    # Un init (tini) en PID 1 récolte les descendants arrêtés des commandes ; l'arrêt
+    # du conteneur laisse à la demande en cours le temps de s'interrompre par degrés
+    init: true
+    stop_grace_period: 30s
+    environment:
+      <<: *connexion
+      # Nom stable : la ligne de l'exécuteur survit à la recréation du conteneur
+      EXECUTEUR_NOM: executeur
+    volumes:
+      - .:/depot:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      base:
+        condition: service_healthy
+    healthcheck:
+      # Le signe de vie : un fichier que l'exécuteur touche toutes les 10 s
+      test: ["CMD", "node", "-e", "process.exit(Date.now() - require('node:fs').statSync('/tmp/executeur.vivant').mtimeMs < 60000 ? 0 : 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+      start_period: 20s
+    restart: unless-stopped
+
+  recette:
+    <<: *image
+    profiles: ["outils"]
+    environment:
+      <<: *connexion
+    volumes:
+      - .:/depot:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      base:
+        condition: service_healthy
+
+volumes:
+  recette-donnees:

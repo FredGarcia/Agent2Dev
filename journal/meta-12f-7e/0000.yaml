@@ -1,0 +1,434 @@
+# Entrée de journal du modèle exécutif 12 facteurs × 7E (contrats.journal)
+# Écrite par resolveur7e.py ; close, elle n'est plus réécrite.
+cycle:
+  id: meta-12f-7e-0000
+  numero: 0
+  instance: meta-12f-7e
+  niveau: meta
+  modele_version: 0.2.0
+  contrat_version: '0.2'
+  en_ci: false
+  debut: '2026-10-01T17:25:31Z'
+  fin: '2026-10-01T17:25:31Z'
+release: 042eb4bbf845
+plan: []
+phases:
+  evaluer:
+    statut: executee
+  elaborer:
+    statut: executee
+  executer:
+    statut: executee
+  examiner:
+    statut: executee
+  evoluer:
+    statut: bloquee
+    cause:
+    - '1.1'
+  emettre:
+    statut: executee
+  equilibrer:
+    statut: bloquee
+    cause:
+    - '5.3'
+scores:
+  '1.1':
+    score: 1
+    constat: 'commande partiel : 1/2 conformes ; git describe --tags --abbrev=0 --match ''v[0-9]*'' →
+      fatal: No names found, cannot describe anything.'
+    preuves: []
+    controles:
+    - type: commande
+      resultat: conforme
+      constat: git rev-parse --is-inside-work-tree → true
+    - type: commande
+      resultat: partiel
+      constat: '1/2 conformes ; git describe --tags --abbrev=0 --match ''v[0-9]*'' → fatal: No names found,
+        cannot describe anything.'
+  '1.2':
+    score: 1
+    constat: 'declaration partiel : déclaration non faite : Le code partagé avec d''autres applications
+      est-il consommé comme bibliothèque, sans copie ?'
+    preuves: []
+    controles:
+    - type: motif
+      resultat: sans_objet
+      constat: 'liste vide : rien à examiner'
+    - type: declaration
+      resultat: partiel
+      constat: 'déclaration non faite : Le code partagé avec d''autres applications est-il consommé comme
+        bibliothèque, sans copie ?'
+  '2.1':
+    score: 2
+    constat: tous les contrôles applicables sont conformes
+    preuves: []
+    controles:
+    - type: fichier
+      resultat: sans_objet
+      constat: aucun manifeste de dépendances concerné
+    - type: motif
+      resultat: sans_objet
+      constat: aucun fichier à lire
+      heuristique: true
+    - type: motif
+      resultat: conforme
+      constat: aucune occurrence dans 1 fichier(s)
+      heuristique: true
+  '2.2':
+    score: 1
+    constat: 'scenario erreur : environnement sans fichiers compose (dev)'
+    preuves: []
+    controles:
+    - type: fichier
+      resultat: conforme
+      constat: 'versionné : Dockerfile'
+    - type: scenario
+      resultat: erreur
+      constat: environnement sans fichiers compose (dev)
+      cause: hors_compose
+  '3.1':
+    score: 2
+    constat: tous les contrôles applicables sont conformes
+    preuves: []
+    controles:
+    - type: fichier
+      resultat: conforme
+      constat: 'versionné : .env.example ; .env ignoré par Git'
+    - type: motif
+      resultat: conforme
+      constat: aucune occurrence dans 1 fichier(s)
+      heuristique: true
+  '3.2':
+    score: 2
+    constat: tous les contrôles applicables sont conformes
+    preuves: []
+    controles:
+    - type: commande
+      resultat: conforme
+      constat: "gitleaks detect --source . --redact --no-banner --log-opts=\"--all\" → \e[90m7:25PM\e\
+        [0m \e[32mINF\e[0m 3 commits scanned. \e[90m7:25PM\e[0m \e[32mINF\e[0m scan completed in 38.6ms\
+        \ \e[90m7:25PM\e[0m \e…"
+    - type: commande
+      resultat: sans_objet
+      constat: environnement sans fichiers compose (production)
+  '4.1':
+    score: null
+    constat: aucun contrôle applicable
+    preuves: []
+    controles:
+    - type: motif
+      resultat: sans_objet
+      constat: 'liste vide : rien à examiner'
+  '4.2':
+    score: null
+    constat: 'sans objet : aucun service attaché à basculer'
+    preuves: []
+    controles: []
+  '5.1':
+    score: 2
+    constat: tous les contrôles applicables sont conformes
+    preuves: []
+    controles:
+    - type: fichier
+      resultat: conforme
+      constat: 'versionné : .gitea/workflows/cycle-7e.yml'
+    - type: motif
+      resultat: conforme
+      constat: 'trouvé : 21: run: docker build -t resolveur7e:${{ gitea.sha }} .'
+      heuristique: true
+    - type: motif
+      resultat: conforme
+      constat: aucune occurrence dans 1 fichier(s)
+    - type: motif
+      resultat: sans_objet
+      constat: aucun fichier à lire
+      heuristique: true
+  '5.2':
+    score: 2
+    constat: tous les contrôles applicables sont conformes
+    preuves: []
+    controles:
+    - type: compose
+      resultat: sans_objet
+      constat: aucun fichier compose pour production
+    - type: motif
+      resultat: conforme
+      constat: 'trouvé : 21: run: docker build -t resolveur7e:${{ gitea.sha }} .'
+      heuristique: true
+  '5.3':
+    score: 1
+    constat: 'scenario erreur : environnement sans fichiers compose (dev) | declaration partiel : déclaration
+      non faite : Depuis le dernier cycle, tout changement sur un environnement est-il passé par une release
+      ?'
+    preuves: []
+    controles:
+    - type: scenario
+      resultat: erreur
+      constat: environnement sans fichiers compose (dev)
+      cause: hors_compose
+    - type: declaration
+      resultat: partiel
+      constat: 'déclaration non faite : Depuis le dernier cycle, tout changement sur un environnement
+        est-il passé par une release ?'
+  '12.1':
+    score: 0
+    constat: 'manifeste absent : assertion sur le manifeste : False'
+    preuves: []
+    controles:
+    - type: manifeste
+      resultat: absent
+      constat: 'assertion sur le manifeste : False'
+  '12.2':
+    score: null
+    constat: 'sans objet : aucune base de données ni serveur ; le journal versionné tient lieu de journal
+      des exécutions'
+    preuves: []
+    controles: []
+  '6.1':
+    score: null
+    constat: 'sans objet : aucun processus ne sert de requêtes'
+    preuves: []
+    controles: []
+  '6.2':
+    score: null
+    constat: 'sans objet : aucun processus long ; la seule donnée persistante, le journal, est versionnée
+      dans le dépôt'
+    preuves: []
+    controles: []
+  '7.1':
+    score: null
+    constat: 'sans objet : le méta-projet n''expose aucun service réseau, il publie un fichier versionné'
+    preuves: []
+    controles: []
+  '7.2':
+    score: null
+    constat: 'sans objet : aucun port d''écoute'
+    preuves: []
+    controles: []
+  '11.1':
+    score: 2
+    constat: tous les contrôles applicables sont conformes
+    preuves: []
+    controles:
+    - type: motif
+      resultat: conforme
+      constat: aucune occurrence dans 3 fichier(s)
+      heuristique: true
+    - type: scenario
+      resultat: sans_objet
+      constat: 'liste vide : rien à examiner'
+  '11.2':
+    score: null
+    constat: aucun contrôle applicable
+    preuves: []
+    controles:
+    - type: scenario
+      resultat: sans_objet
+      constat: 'liste vide : rien à examiner'
+      heuristique: true
+  '8.1':
+    score: null
+    constat: 'sans objet : aucun processus long ; le cycle est une tâche ponctuelle'
+    preuves: []
+    controles: []
+  '8.2':
+    score: null
+    constat: 'sans objet : un seul type de charge, la tâche ponctuelle du cycle'
+    preuves: []
+    controles: []
+  '9.1':
+    score: null
+    constat: 'sans objet : aucun processus long à démarrer'
+    preuves: []
+    controles: []
+  '9.2':
+    score: null
+    constat: 'sans objet : aucun processus long à arrêter'
+    preuves: []
+    controles: []
+  '9.3':
+    score: null
+    constat: 'sans objet : aucun processus long ni file de tâches ; l''entrée de journal n''est écrite
+      qu''en fin de cycle'
+    preuves: []
+    controles: []
+  '10.1':
+    score: 2
+    constat: tous les contrôles applicables sont conformes
+    preuves: []
+    controles:
+    - type: compose
+      resultat: sans_objet
+      constat: aucun fichier compose pour tous
+    - type: motif
+      resultat: conforme
+      constat: aucune occurrence dans 2 fichier(s)
+      heuristique: true
+  '10.2':
+    score: 1
+    constat: 'metrique erreur : mesure de delai_commit_production_h impossible : fatal: No names found,
+      cannot describe anything. fatal: No names found, cannot describe anything. fatal: ambiguous argument
+      '''': unknown revision or path not in…'
+    preuves: []
+    controles:
+    - type: metrique
+      resultat: erreur
+      constat: 'mesure de delai_commit_production_h impossible : fatal: No names found, cannot describe
+        anything. fatal: No names found, cannot describe anything. fatal: ambiguous argument '''': unknown
+        revision or path not in…'
+      cause: execution
+  '10.3':
+    score: 1
+    constat: 'declaration partiel : déclaration non faite : Les développeurs déclenchent-ils les déploiements
+      et lisent-ils les logs de production ?'
+    preuves: []
+    controles:
+    - type: motif
+      resultat: conforme
+      constat: 'trouvé : 10: workflow_dispatch:'
+      heuristique: true
+    - type: declaration
+      resultat: partiel
+      constat: 'déclaration non faite : Les développeurs déclenchent-ils les déploiements et lisent-ils
+        les logs de production ?'
+  EX.1:
+    score: 0
+    constat: 'commande absent : python3 resolveur7e.py historique → code 0 | manifeste absent : assertion
+      sur le manifeste : False'
+    preuves: []
+    controles:
+    - type: commande
+      resultat: absent
+      constat: python3 resolveur7e.py historique → code 0
+    - type: manifeste
+      resultat: absent
+      constat: 'assertion sur le manifeste : False'
+  EX.2:
+    score: 1
+    constat: 'commande partiel : champ non déclaré : observabilite.alertes'
+    preuves: []
+    controles:
+    - type: manifeste
+      resultat: conforme
+      constat: 'assertion sur le manifeste : True'
+    - type: commande
+      resultat: partiel
+      constat: 'champ non déclaré : observabilite.alertes'
+  EV.1:
+    score: null
+    constat: aucun contrôle applicable
+    preuves: []
+    controles:
+    - type: journal
+      resultat: sans_objet
+      constat: historique insuffisant
+  EV.2:
+    score: null
+    constat: aucun contrôle applicable
+    preuves: []
+    controles:
+    - type: journal
+      resultat: sans_objet
+      constat: historique insuffisant
+  EQ.1:
+    score: 1
+    constat: 'tous les contrôles applicables sont conformes | plafonné à 1 : prérequis en écart (5.3)'
+    preuves: []
+    controles:
+    - type: manifeste
+      resultat: conforme
+      constat: 'assertion sur le manifeste : True'
+    - type: journal
+      resultat: sans_objet
+      constat: historique insuffisant
+  EQ.2:
+    score: null
+    constat: aucun contrôle applicable
+    preuves: []
+    controles:
+    - type: journal
+      resultat: sans_objet
+      constat: historique insuffisant
+  IN.1:
+    score: 2
+    constat: tous les contrôles applicables sont conformes
+    preuves: []
+    controles:
+    - type: manifeste
+      resultat: conforme
+      constat: 'assertion sur le manifeste : True'
+    - type: journal
+      resultat: sans_objet
+      constat: historique insuffisant
+  FR.1:
+    score: 2
+    constat: tous les contrôles applicables sont conformes
+    preuves: []
+    controles:
+    - type: fichier
+      resultat: conforme
+      constat: 'versionné : modele-executif-12f-7e.yaml'
+    - type: manifeste
+      resultat: conforme
+      constat: 'assertion sur le manifeste : True'
+synthese:
+  elements:
+    moyenne: 1.25
+    ecarts:
+    - '1.1'
+    - '1.2'
+    - '2.2'
+  espace:
+    moyenne: 2.0
+    ecarts: []
+  engendrent:
+    moyenne: 1.25
+    ecarts:
+    - '5.3'
+    - '12.1'
+  etat:
+    moyenne: null
+    ecarts: []
+  expression:
+    moyenne: 2.0
+    ecarts: []
+  evolutif:
+    moyenne: null
+    ecarts: []
+  environnement:
+    moyenne: 1.33
+    ecarts:
+    - '10.2'
+    - '10.3'
+  second_ordre:
+    moyenne: 1.2
+    ecarts:
+    - EX.1
+    - EX.2
+    - EQ.1
+mesures: []
+incidents: []
+remarques: []
+outils:
+  git: true
+  jq: true
+  grep: true
+  docker: true
+  gitleaks: true
+  trivy: false
+tendance: {}
+regressions: []
+viabilite: null
+decisions: []
+seuils_revises: []
+propositions_modele:
+- critere: '2.2'
+  nature: controle
+  motif: contrôle prévu pour un projet compose, sans équivalent pour ce projet
+- critere: '5.3'
+  nature: controle
+  motif: contrôle prévu pour un projet compose, sans équivalent pour ce projet
+- critere: '12.1'
+  nature: controle
+  motif: 'L''assertion n''accepte que docker compose run ou exec. Au rang méta, la tâche du cycle passe
+    par docker run sur l''image de la release : accepter toute exécution depuis l''image de la release.'
