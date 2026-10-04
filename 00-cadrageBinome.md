@@ -2,7 +2,7 @@
 espace: bin
 document: cadrage
 version: 0.1.0
-statut: proposition
+statut: remplace
 date: 2026-09-27
 amont:
   - a2t/cadrage@0.1
@@ -12,7 +12,7 @@ amont:
 
 # Binôme Agent2Dev · Agent2Test — Cadrage
 
-> Étape 1 sur 8 · proposition soumise à ratification · 27 septembre 2026
+> Étape 1 sur 8 · version 0.1.0 du 27 septembre 2026, remplacée par la version 0.2.0 du 28 septembre ([`01-cadrageBinome.md`](01-cadrageBinome.md)), ratifiée en version 0.3.0 le 4 octobre
 > Document compagnon : [`01-architecture.md`](01-architecture.md)
 > Agent2Dev : [`00-cadrage.md`](../../agent2dev/docs/00-cadrage.md) · [`01-architecture.md`](../../agent2dev/docs/01-architecture.md)
 > Agent2Test, version 0.1 du 25 septembre : [`00-cadrage.md`](../../agent2test/docs/00-cadrage.md) · [`01-architecture.md`](../../agent2test/docs/01-architecture.md) · [`02-cahier-des-charges.md`](../../agent2test/docs/02-cahier-des-charges.md)

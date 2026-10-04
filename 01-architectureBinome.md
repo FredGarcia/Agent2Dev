@@ -1,18 +1,18 @@
 ---
 espace: bin
 document: architecture
-version: 0.2.0
-statut: proposition
-date: 2026-09-28
+version: 0.3.0
+statut: ratifie
+date: 2026-10-04
 amont:
-  - bin/cadrage@0.2.0
+  - bin/cadrage@0.3.0
   - a2t/architecture@0.1
   - a2t/cahier-des-charges@0.1
 ---
 
 # Binôme Agent2Dev · Agent2Test — Architecture
 
-> Étape 1 sur 8 · version 0.2.0 du 28 septembre : arbitrages T1 et T3 à T10 intégrés, le reste soumis à ratification
+> Étape 1 sur 8 · version 0.3.0 du 4 octobre : ratifiée, avec le couplage des deux têtes porté par n8n (cadrage §3.2)
 > Hypothèses (H), tensions (T) et plan des étapes : [`00-cadrage.md`](00-cadrage.md)
 > Tête Dev : [`agent2dev/docs/01-architecture.md`](../../agent2dev/docs/01-architecture.md) · Tête Test : [`agent2test/docs/01-architecture.md`](../../agent2test/docs/01-architecture.md)
 
@@ -27,7 +27,7 @@ amont:
 9. La documentation comme modèle de soi
 10. Déploiement
 11. Registre des décisions
-12. Amendements proposés à Agent2Test
+12. Amendements à Agent2Test
 13. Filiation
 
 ---
@@ -41,7 +41,9 @@ amont:
 - **Un contrat.** Les deux têtes ne partagent ni code, ni base, ni fichier interne, ni contexte de moteur. Elles échangent des messages versionnés, et rien d'autre.
 - **Un oracle.** Les critères d'acceptation de la demande, ratifiés par un humain, sont la référence commune. Aucune tête ne les change pour obtenir la conformité : la boucle converge vers eux, jamais l'inverse.
 
-Le binôme est autonome par défaut (T1) : chaque point de contrôle est à son plancher, dans une enveloppe faite de budgets, d'une règle de progrès et d'une détection d'oscillation. L'humain voit tout en continu. Il décide à quelques points qui ne se délèguent pas : le profil, l'arbitrage, la gouvernance des règles et la ratification de l'oracle avant toute clôture « conforme ». Il peut tout arrêter à tout moment.
+Le binôme est autonome par défaut (T1) : chaque point de contrôle est à son plancher, dans une enveloppe faite de budgets, d'une règle de progrès et d'une détection d'oscillation. L'humain voit tout en continu. Il décide à quelques points qui ne se délèguent pas : le profil, l'arbitrage, la gouvernance des règles et la ratification de l'oracle avant toute clôture « conforme ». S'y ajoutent les points bloquants du binôme : fichiers soumis à ratification, fusion à la mission, audit à chaque clôture (§5.2). Il peut tout arrêter à tout moment.
+
+**Un relais.** n8n porte le couplage (cadrage §3.2). Il valide chaque message, l'inscrit dans un Gitea local et l'achemine ; il tient les compteurs, les délais, les relances et les escalades. Il ne juge jamais : le jugement reste aux têtes, et la décision aux personnes.
 
 ---
 
@@ -72,7 +74,7 @@ Ce tableau reprend celui d'Agent2Test (`01-architecture.md` §2.1), avec des pro
 - La livraison effective, produit de l'E3 d'une itération d'Agent2Dev, entre dans l'environnement d'Agent2Test. Elle y ouvre l'E1 d'une campagne.
 - Le rapport, produit de l'E7 de cette campagne, entre dans l'environnement d'Agent2Dev. Il y alimente l'E4 de l'itération.
 
-Aucune tête n'exécute un cycle de l'autre. Chacune lit le message de l'autre à travers sa propre structure : ses schémas, ses règles, ses points de contrôle.
+Aucune tête n'exécute un cycle de l'autre. Chacune lit le message de l'autre à travers sa propre structure : ses schémas, ses règles, ses points de contrôle. Le message passe par n8n, qui l'achemine sans le juger (§4.3).
 
 ### 2.3 Le binôme, un cycle 7E dont chaque tête est une phase
 
@@ -117,24 +119,30 @@ flowchart TB
   HUM(["Développeurs<br/>superviseur · référent"])
   DEV["agent2dev<br/>15 modules · 7 fiches<br/>noyau propre"]
   TST["agent2test<br/>16 modules<br/>noyau propre (C0)"]
-  SPEC[("binome/<br/>spécifications · schémas du contrat<br/>vecteurs de conformité")]
+  N8N["n8n<br/>achemine, compte, relance<br/>ne juge jamais"]
+  SPEC[("binome/<br/>spécifications · enveloppe binome-7e/1<br/>vecteurs de conformité")]
   GEM{{"moteur<br/>Gemini sous licence Gemini Code Assist<br/>ou moteur local"}}
-  GIT[("projet git<br/>branche et arbre dédiés")]
+  GIT[("Gitea local<br/>projet, branche dédiée<br/>tâches et échanges")]
+  GL[("GitLab du projet")]
   APP[["instance de l'application<br/>Java · Angular · PostgreSQL"]]
   HUM --> DEV
   HUM --> TST
-  DEV <==>|"protocole binôme · HTTP local"| TST
+  HUM <-->|"sollicitations, décisions"| N8N
+  DEV <==>|"binome-7e/1"| N8N
+  N8N <==>|"binome-7e/1"| TST
+  N8N -->|"inscrit"| GIT
   DEV -.->|"se conforme à"| SPEC
   TST -.->|"se conforme à"| SPEC
   DEV -->|"contexte borné et masqué"| GEM
   TST -->|"contexte borné et masqué"| GEM
-  DEV -->|"écrit, commit"| GIT
+  DEV -->|"écrit, commit, pousse la branche"| GIT
   TST -.->|"lit le commit livré"| GIT
+  HUM -->|"à la clôture, pousse la branche prête"| GL
   DEV -->|"construit, lance, sonde"| APP
   TST -->|"Playwright"| APP
 ```
 
-Les deux têtes appellent le même moteur, chacune avec ses propres contextes : aucune ne voit ce que l'autre lui envoie (I8).
+Les deux têtes appellent le même moteur, chacune avec ses propres contextes : aucune ne voit ce que l'autre lui envoie (I8). Elles ne s'adressent jamais directement : n8n achemine chaque message et l'inscrit dans le Gitea local, où vivent aussi le projet et sa branche dédiée. À la clôture, une personne pousse la branche prête vers le GitLab du projet.
 
 ### 3.2 Les spécifications communes
 
@@ -143,7 +151,7 @@ Ce qui doit être identique dans les deux têtes est écrit une fois, ici. Chaqu
 | Spécification | Contenu | Où | Vecteurs de conformité |
 |---|---|---|---|
 | Cycle 7E | sept phases, récursion, couplage, vecteur 7E des traces | §2 | séquences de phases valides et invalides |
-| Contrat | enveloppe, douze messages, versions, transport | §4 ; schémas dans `binome/contrat/1.0/` | messages valides et invalides, doublons, trous de séquence |
+| Contrat | enveloppe, douze messages, versions, transport ; entre les têtes, l'enveloppe `binome-7e/1`, que porte n8n | §4 ; schémas dans `binome/contrat/1.0/` ; schéma de `binome-7e/1` : `binome/contrat/message.schema.json`, dans le dépôt du binôme | messages valides et invalides, doublons, trous de séquence |
 | Régimes de contrôle | `presenter`, `ecart`, `differe`, `auto` ; planchers | §5.1 | — |
 | Ligne de journal | champs, forme canonique, chaînage | §7.4 | lignes et empreintes attendues, chaîne rompue |
 | Politique de stockage | port, deux adaptateurs, seuil de bascule, isolation | §7 | bascule d'un agent, chaîne intacte après bascule |
@@ -220,12 +228,14 @@ classDiagram
 
 | Tête | Espace | Rôle dans le binôme | Échelles propres | Composition | Noyau | Documents |
 |---|---|---|---|---|---|---|
-| Agent2Dev | `a2d` | propriétaire de la demande et de la boucle ; engendre | Système, Demande, Itération, Tâche | 15 modules, 7 fiches | `agent2dev/noyau/`, issu d'`agents-modif` | `agent2dev/docs/` |
+| Agent2Dev | `a2d` | propriétaire de la demande, juge de la boucle ; engendre | Système, Demande, Itération, Tâche | 15 modules, 7 fiches | `agent2dev/noyau/`, issu d'`agents-modif` | `agent2dev/docs/` |
 | Agent2Test | `a2t` | propriétaire des campagnes ; constate | Système, Campagne, Scénario, Étape | 16 modules après amendements | C0, défini par ses propres documents (a2t/D3, a2t/D4) | `agent2test/docs/` |
 
 ---
 
 ## 4. Le contrat d'échange
+
+Une seule enveloppe circule entre les têtes : `binome-7e/1`, que n8n valide, inscrit dans le Gitea local et achemine (cadrage §3.2). Chaque tête y met les messages de ce chapitre : la livraison effective devient une `livraison`, le rapport de campagne un `verdict`, ses anomalies et leurs reproductions vont dans ses échecs. La ligne de journal (§7.4) et la convention documentaire (§9) restent normatives dans chaque tête. La correspondance des autres messages, et ce que deviennent les séquences, les boîtes durables et les vecteurs de conformité, relèvent du protocole binôme de l'étape 2.
 
 ### 4.1 Principes
 
@@ -248,21 +258,25 @@ classDiagram
 | `campagne.refusee` | a2t → a2d | sonde négative, plan absent, version incompatible | motif, signaux | Agent2Dev redéploie (O1), ou ouvre a2d/CP-5 |
 | `attente.humaine` | a2t ↔ a2d | un point de contrôle `presenter` bloque la boucle | tête, point de contrôle, objet, date d'ouverture | visible dans la vue binôme de l'autre tête |
 | `campagne.rapport` | a2t → a2d | E7 de la campagne | verdict par critère ; anomalies (cause, signaux, attendu, observé, étapes de reproduction, erreurs réseau et console, références et empreintes des preuves) ; régressions ; trous ; empreinte de fin de chaîne | E4 de l'itération ; diagnostic ; l'instance est rendue |
-| `verdict.conteste` | a2d → a2t | le diagnostic conclut que l'application respecte le critère | anomalie, argument, références de code, action demandée : réparer le parcours ou arbitrer | Agent2Test répare (cause `DEFAUT_PARCOURS`) ou ouvre a2t/CP-3 ; le verdict n'est jamais réécrit |
-| `verdict.revise` | a2t → a2d | après réparation et rejeu, ou décision en a2t/CP-3 | contestation retenue ou non ; nouveau verdict issu d'une nouvelle exécution | Agent2Dev poursuit, ou ouvre a2d/CP-5 |
+| `verdict.conteste` | a2d → personne, par n8n | le diagnostic conclut que l'application respecte le critère | anomalie, argument, références de code, action demandée : réparer le parcours | une personne arbitre en a2d/CP-5 ; Agent2Test n'en reçoit que la décision, jamais l'argument (I8) ; le verdict n'est jamais réécrit |
+| `verdict.revise` | a2t → a2d | après la réparation et le rejeu qu'une personne a décidés en a2d/CP-5, ou après une décision en a2t/CP-3 | nouveau verdict issu d'une nouvelle exécution | Agent2Dev poursuit : il corrige, ou conteste de nouveau |
 | `demande.close` | a2d → a2t | clôture (a2d/CP-6) ou abandon | statut, commit final | archivage des campagnes de la demande |
 | `binome.suspendre` · `binome.reprendre` | a2t ↔ a2d | arrêt d'urgence, reprise | auteur, motif | propagation à l'autre tête (I5) |
 
 ### 4.3 Transport
 
-- **HTTP local.** Chaque tête expose, sur son port de liaison (§10) :
+Les têtes ne s'appellent pas : chacune échange avec n8n (cadrage §3.2).
+
+- **HTTP local.** Chaque tête expose, sur son port de liaison (§10), l'API que n8n appelle :
   - `POST /binome/v1/messages` : dépôt d'un message ; réponse `202` avec l'accusé ;
   - `GET /binome/v1/etat` : santé, version du protocole, demandes actives, campagne en cours, points de contrôle en attente, suspension ;
   - `GET /binome/v1/echanges?demande=…` : historique des messages d'une demande, en lecture seule.
-- **Boîtes durables.** L'émetteur inscrit le message dans sa boîte d'envoi avant de l'envoyer, puis réessaie avec un délai croissant, jusqu'à l'accusé. Le récepteur inscrit le message dans sa boîte de réception avant d'accuser. Une tête arrêtée ne perd rien : elle reprend à son redémarrage.
+- **Acheminement.** Une tête remet ses messages à n8n, dans l'enveloppe `binome-7e/1`. n8n valide chaque message, l'inscrit dans le Gitea local, écarte les doublons par leur identifiant, puis transmet le message à l'autre tête. Un message invalide n'est jamais transmis : il devient une erreur de contrat.
+- **PR.** À chaque livraison, n8n ouvre ou met à jour la PR de la branche dédiée dans le Gitea local et compare ses fichiers aux périmètres du contrat de projet. Un fichier hors périmètre rend la livraison invalide ; une PR qui touche un fichier soumis à ratification attend une personne.
+- **Boîtes durables.** L'émetteur inscrit le message dans sa boîte d'envoi avant de le remettre, puis réessaie avec un délai croissant, jusqu'à l'accusé. Le récepteur inscrit le message dans sa boîte de réception avant d'accuser. Une tête arrêtée ne perd rien : elle reprend à son redémarrage. n8n non plus : l'état des tâches vit dans le Gitea local.
 - **Ordre.** Un trou de séquence suspend le traitement de la demande concernée et lève une alerte.
-- **Authentification.** Un jeton porteur partagé, généré à l'installation, est lu dans `donnees/binome/jeton` (mode 0600). Les deux têtes n'écoutent que sur `127.0.0.1`.
-- **Présence.** Chaque liaison interroge `GET /binome/v1/etat` chez l'autre toutes les 30 secondes. Un pair absent lève l'événement `pair.indisponible` ; les messages restent en boîte d'envoi.
+- **Authentification.** Un jeton porteur partagé, généré à l'installation, est lu dans `donnees/binome/jeton` (mode 0600) ; n8n le garde dans ses identifiants, jamais dans un workflow ni dans un message. Les têtes n'écoutent que sur `127.0.0.1`.
+- **Présence.** Une tête absente laisse ses tâches en attente : n8n les relance, puis les escalade à l'échéance. Une liaison qui ne joint pas n8n lève l'événement `pair.indisponible` ; ses messages restent en boîte d'envoi.
 - **MCP** sert aux humains et à l'IDE, pas au dialogue entre têtes.
 
 ### 4.4 Séquence nominale, en autonomie
@@ -304,7 +318,7 @@ sequenceDiagram
   D->>T: demande.close
 ```
 
-La ratification de l'oracle peut intervenir à tout moment ; elle est seulement exigée avant une clôture « conforme » (I2).
+La ratification de l'oracle peut intervenir à tout moment ; elle est seulement exigée avant une clôture « conforme » (I2). Chaque flèche entre les deux têtes passe par n8n (§4.3).
 
 ### 4.5 Exemple de message
 
@@ -340,7 +354,7 @@ La ratification de l'oracle peut intervenir à tout moment ; elle est seulement 
 }
 ```
 
-Les identifiants suivent la convention de l'annexe A d'Agent2Test : l'espace d'un critère est l'identifiant de la demande (`DM-20260927-001/CA-1.2`).
+Les identifiants suivent la convention de l'annexe A d'Agent2Test : l'espace d'un critère est l'identifiant de la demande (`DM-20260927-001/CA-1.2`). L'exemple montre le message tel que la tête le produit ; entre les têtes, il voyage dans l'enveloppe `binome-7e/1` (§4).
 
 ---
 
@@ -372,12 +386,13 @@ Chaque tête définit ses points de contrôle, leurs planchers et leurs régimes
 - **Différables, plancher `differe`** : a2d/CP-1 (cadrage et oracle), a2d/CP-2 (conception), a2d/CP-3 (livraison), a2d/CP-6 (clôture), a2t/CP-1 (sélection), a2t/CP-2 (mise en place), a2t/CP-3 (verdicts).
 - **Cas forcés** : quel que soit le régime, un avertissement bloquant, une modification de la chaîne de construction ou des dépendances, une suppression de fichier ou une migration destructive imposent `presenter` (a2d/I8).
 - **Définitions** : Agent2Dev `01-architecture.md` §5.2 ; Agent2Test `01-architecture.md` §5.2, amendé par AM-6.
+- **Points du binôme** : ils s'ajoutent à ceux des têtes. Quand ils portent la même décision — valider l'oracle (a2d/CP-1), arbitrer (a2d/CP-5), ouvrir la session SSO (a2t/CP-0) —, le point de la tête s'applique, avec son régime : son plancher par défaut, plus strict si une personne le configure ainsi. Par exemple, a2d/CP-1 en `presenter` fait valider les critères avant le plan, comme dans la spécification n8n. S'y ajoutent trois points bloquants : ratifier une PR qui touche un fichier soumis à ratification, fusionner à la mission, auditer à chaque clôture (§6.4). Les escalades de n8n vont, elles aussi, à une personne. À un point bloquant, la tâche passe en attente d'une personne ; seule sa décision la fait repartir.
 
 Comme a2d/CP-1 est en régime `differe` par défaut, la boucle avance sur un oracle pas encore ratifié ; mais aucune demande n'est close « conforme » tant que l'humain ne l'a pas ratifié (I2).
 
 ### 5.3 Enveloppe d'autonomie et escalade
 
-Une boucle de rétroaction autonome a besoin d'une frontière. Celle du binôme tient en trois règles, portées par l'orchestrateur d'Agent2Dev, propriétaire de la boucle. Leurs valeurs et leurs bornes sont dans Agent2Dev `01-architecture.md` §6.6, leur algorithme au §7.6 du même document.
+Une boucle de rétroaction autonome a besoin d'une frontière. Celle du binôme tient en trois règles, portées par l'orchestrateur d'Agent2Dev, juge de la boucle (D2). Leurs valeurs et leurs bornes sont dans Agent2Dev `01-architecture.md` §6.6, leur algorithme au §7.6 du même document.
 
 1. **Budgets** : nombre d'itérations, durée hors attentes humaines et hors attente de l'instance, taille d'une itération (fichiers, lignes).
 2. **Progrès** : chaque itération réduit le nombre de critères non conformes, ou résout une anomalie sans régression. La stagnation est bornée.
@@ -385,9 +400,11 @@ Une boucle de rétroaction autonome a besoin d'une frontière. Celle du binôme 
 
 Chaque demande active a sa propre enveloppe (T10).
 
+n8n ajoute les limites entre les têtes, lues dans son catalogue : allers-retours refus–correction, questions, campagnes simultanées, délais. Il en tient les compteurs et escalade à la limite. Les trois règles restent dans la constitution d'Agent2Dev. La correspondance entre les tâches du catalogue et les demandes, itérations et tâches d'Agent2Dev relève de l'étape 2, avec les valeurs qui en découlent : trois allers-retours au catalogue, cinq itérations par demande chez Agent2Dev.
+
 Ouvrent aussi l'arbitrage :
 
-- une contestation maintenue après rejeu ;
+- une contestation d'Agent2Dev, que n8n porte à une personne ;
 - des refus de campagne au-delà du budget de redéploiement ;
 - un pair absent au-delà du délai ;
 - un avertissement bloquant.
@@ -397,22 +414,22 @@ Toute sortie de l'enveloppe ouvre a2d/CP-5. L'humain peut y accorder un budget, 
 ### 5.4 Arrêt d'urgence
 
 - Tout humain peut suspendre le binôme depuis l'une ou l'autre tête, par le tableau de bord ou le MCP.
-- La tête qui reçoit l'ordre le propage à l'autre (`binome.suspendre`) et le consigne.
+- La tête qui reçoit l'ordre le propage à l'autre, par n8n (`binome.suspendre`), et le consigne. n8n suspend aussi ses délais, relances et escalades jusqu'à la reprise.
 - L'arrêt prend effet au plus tard à la fin de l'action en cours : étape Playwright, appel au moteur, commande. Une commande qui dépasse le délai de grâce reçoit un signal d'arrêt.
 - L'état est conservé. Seul un humain reprend (`binome.reprendre`).
 
 ### 5.5 La vue binôme
 
-Servie par le tableau de bord d'Agent2Dev (D19), alimentée par l'API de lecture d'Agent2Test.
+Servie par le tableau de bord d'Agent2Dev (D19), alimentée par l'API de lecture d'Agent2Test et par l'état des tâches que n8n tient dans le Gitea local.
 
 | Élément | Contenu |
 |---|---|
 | File | demandes actives, en attente et closes ; demande qui tient l'instance ; livraisons en attente de l'instance |
 | État d'une demande | position dans le cycle de vie (a2d §5.4), itération en cours, budgets consommés |
 | Matrice de convergence | critères de l'oracle × itérations : conforme, non conforme, non vérifié ; régressions signalées |
-| Points en attente | les deux têtes, avec leur régime et leur ancienneté ; décisions différées en file ; lien vers l'objet à trancher |
+| Points en attente | les deux têtes et le binôme, avec leur régime et leur ancienneté ; décisions différées en file ; lien vers l'objet à trancher |
 | Échanges | chronologie des messages de la demande, avec leurs empreintes |
-| Santé | présence du pair, boîtes d'envoi en attente, alertes du premier ordre |
+| Santé | présence de n8n et de l'autre tête, boîtes d'envoi en attente, alertes du premier ordre |
 | Commandes | suspendre, reprendre, ouvrir l'arbitrage |
 
 ---
@@ -426,7 +443,7 @@ Chaque tête est fermée sur son fonctionnement, au sens de Maturana et Varela :
 Un message de l'autre tête perturbe sans instruire :
 
 - Agent2Dev n'exécute pas un rapport d'anomalies, il le diagnostique ;
-- Agent2Test n'exécute pas une contestation, il la réexamine à travers ses causes, ses réparations et son a2t/CP-3.
+- Agent2Test ne reçoit pas les arguments d'une contestation : une personne la tranche, et Agent2Test lit sa décision à travers ses causes, ses réparations et son a2t/CP-3.
 
 Les interactions récurrentes produisent des changements de structure congruents chez les deux têtes : c'est un couplage structurel. Leur domaine consensuel est l'oracle, que l'humain fixe et qu'aucune d'elles ne renégocie.
 
@@ -441,7 +458,7 @@ Les interactions récurrentes produisent des changements de structure congruents
   - attente humaine par point de contrôle ; décisions différées en file ;
   - attente de l'instance par demande ;
   - messages en boîte d'envoi et délai d'accusé ;
-  - présence du pair.
+  - présence de n8n.
 - **Alertes** : dérive d'un indicateur au-delà de son seuil. Chaque tête reste propriétaire de ses indicateurs ; la vue binôme les juxtapose.
 
 ### 6.3 Second ordre croisé
@@ -456,6 +473,7 @@ Chaque tête observe la fiabilité des jugements de l'autre, et la mesure contre
 | Pouvoir prédictif des contrôles locaux : part des itérations aux contrôles verts rejetées pour une anomalie qu'un test unitaire aurait vue | `reflexif` d'Agent2Dev | verdicts d'Agent2Test | Agent2Dev : tâches de tests unitaires dans les plans |
 | Révocation des décisions différées : part des décisions `differe` corrigées ou rejetées après coup | `reflexif` de chaque tête | décisions humaines | régime plus strict, jamais plus lâche |
 | Stabilité de l'oracle : critères modifiés après a2d/CP-1 ; attendus modifiés par une réparation | `reflexif` de chaque tête | grand livre | alerte de co-dérive ; un attendu modifié par réparation viole AM-11 |
+| Accord avec l'audit : part des critères « conformes », tirés au hasard à la clôture, que la personne confirme | `reflexif` de chaque tête | audit par échantillon (T2) | un désaccord rouvre la tâche et compte contre la fiabilité croisée des deux têtes |
 
 *Diagramme de composants (UML, en flowchart Mermaid) — le second ordre croisé*
 
@@ -503,7 +521,7 @@ Les glissements prévisibles, chacun raisonnable pris isolément, et leurs parad
 | Le même angle mort : un seul moteur (T3) lit un critère de travers en écrivant le scénario, le code et le parcours ; c'est une panne de mode commun | scénarios écrits avant le code, puis figés (a2d/I15) ; contextes séparés (I8) ; à l'import, chaque attendu doit découler d'un critère (AM-17) ; posture de réfutation dans les consignes d'Agent2Test |
 | La livraison glisse : Agent2Dev livre une partie et la déclare effective | critères visés contrôlés contre l'oracle ; clôture sur l'oracle entier seulement |
 
-**Signature.** Les indicateurs s'améliorent — moins d'itérations, plus de verdicts « conforme » — pendant que l'accord avec l'humain baisse : défauts trouvés après clôture, contestations et reclassements tranchés contre la tête. Seules des décisions humaines permettent de voir cette signature. En autonomie, elles se raréfient : d'où la proposition d'un audit par échantillon à la clôture, ouverte en T2.
+**Signature.** Les indicateurs s'améliorent — moins d'itérations, plus de verdicts « conforme » — pendant que l'accord avec l'humain baisse : défauts trouvés après clôture, contestations et reclassements tranchés contre la tête. Seules des décisions humaines permettent de voir cette signature. En autonomie, elles se raréfient : d'où l'audit par échantillon, retenu le 4 octobre (T2). À chaque clôture, une personne confirme un critère « conforme » tiré au hasard ; un désaccord rouvre la tâche et compte contre la fiabilité croisée des têtes (§6.3).
 
 **Point d'ancrage.** Seul un repère extérieur au couple arrête la co-dérive : l'oracle ratifié par l'humain, qu'aucune tête ne modifie et qu'aucune ne négocie avec l'autre. L'indépendance des noyaux (T8) et des lectures de l'application (D13) ajoute une diversité là où le moteur n'en offre plus.
 
@@ -653,11 +671,11 @@ Chaque document commence par un en-tête YAML, comme les plans de tests de l'ann
 ---
 espace: a2d
 document: architecture
-version: 0.2.0
-statut: proposition
-date: 2026-09-28
+version: 0.3.0
+statut: ratifie
+date: 2026-10-04
 amont:
-  - bin/architecture@0.2.0
+  - bin/architecture@0.3.0
   - a2t/architecture@0.1
 ---
 ```
@@ -745,6 +763,7 @@ Le vérificateur des documents est un outil de `binome/`, lancé à chaque révi
 flowchart LR
   IDP(["fournisseur SSO<br/>si SSO"])
   GCP(["Gemini<br/>licence Gemini Code Assist"])
+  GL(["GitLab du projet"])
   subgraph WIN["Windows 11"]
     VSC["VS Code<br/>Gemini Code Assist"]
     NAV["navigateur<br/>du superviseur"]
@@ -759,6 +778,9 @@ flowchart LR
     CHR["Chromium de Playwright"]
   end
   subgraph DOCK["Docker"]
+    N8N["n8n :5678<br/>composition du binôme"]
+    PG[("Postgres<br/>de n8n")]
+    GITEA[("Gitea local<br/>et son exécuteur")]
     INST["instance · projet a2d-instance<br/>back :18080 · front :14200 · base :15432"]
     OLL["ollama :11434<br/>profil souverain"]
   end
@@ -766,7 +788,12 @@ flowchart LR
   NAV --> A2T
   VSC -->|"MCP HTTP · mode accompagné"| A2D
   VSC -->|"MCP HTTP · mode accompagné"| A2T
-  A2D <==>|"protocole binôme"| A2T
+  A2D <==>|"binome-7e/1"| N8N
+  N8N <==>|"binome-7e/1"| A2T
+  N8N --> PG
+  N8N -->|"tâches, états, échanges"| GITEA
+  A2D -->|"pousse la branche"| GITEA
+  GITEA -.->|"branche prête, poussée par une personne"| GL
   A2D -->|"sous-processus"| CLI
   A2T -->|"sous-processus"| CLI
   CLI -->|"contexte borné et masqué"| GCP
@@ -781,26 +808,28 @@ flowchart LR
   A2T -.-> OLL
 ```
 
-L'instance tourne en conteneurs, ou en processus sur l'hôte, selon son profil (Agent2Dev `01-architecture.md` §8.5). Les ports sont ceux du profil par défaut. Chaque appel à Gemini CLI est un sous-processus distinct, avec son propre contexte (I8).
+L'instance tourne en conteneurs, ou en processus sur l'hôte, selon son profil (Agent2Dev `01-architecture.md` §8.5). Les ports sont ceux du profil par défaut. Chaque appel à Gemini CLI est un sous-processus distinct, avec son propre contexte (I8). n8n, sa base Postgres et le Gitea local tournent sur le même poste, dans la composition du binôme ; à la mission, chaque tête tourne en une seule instance de processus, et une seule campagne occupe l'instance de l'application (cadrage §3.2). Comme les têtes n'écoutent que sur `127.0.0.1`, n8n doit les joindre depuis son conteneur : le montage réseau est fixé à l'étape 7.
 
 | Port | Écoute | Rôle |
 |---|---|---|
 | 4600 | 127.0.0.1 | tableau de bord d'Agent2Dev et vue binôme |
 | 4601 | 127.0.0.1 | MCP d'Agent2Dev, en HTTP |
-| 4602 | 127.0.0.1 | liaison d'Agent2Dev |
+| 4602 | 127.0.0.1 | liaison d'Agent2Dev, appelée par n8n |
 | 4700 | 127.0.0.1 | tableau de bord d'Agent2Test |
 | 4701 | 127.0.0.1 | MCP d'Agent2Test, en HTTP |
-| 4702 | 127.0.0.1 | liaison d'Agent2Test |
+| 4702 | 127.0.0.1 | liaison d'Agent2Test, appelée par n8n |
+| 5678 | 127.0.0.1 | n8n |
+| fixé par la composition du binôme | 127.0.0.1 | Gitea local et son exécuteur |
 | 18080 · 14200 · 15432 | localhost | instance : back, front, base |
 | 11434 | 127.0.0.1 | Ollama, profil souverain |
 
 | Profil | Contenu | Usage |
 |---|---|---|
-| `hote` (défaut) | les deux têtes en processus Node sur WSL2 ; Gemini CLI sans tête ; l'instance selon son profil | développement et autonomie |
+| `hote` (défaut) | les deux têtes en processus Node sur WSL2 ; Gemini CLI sans tête ; l'instance selon son profil ; n8n, Postgres et Gitea en composition | développement et autonomie |
 | `souverain` | profil `hote`, avec le service `ollama` à la place de Gemini : moteur et plongements locaux | aucun code ne quitte le poste |
 | `conteneur` | profil `hote` et Agent2Test sans tête (image Playwright), session importée ; Agent2Dev reste sur l'hôte, qui porte git, les chaînes de construction et Docker | exécutions répétées |
 
-Les composants installés sont open source :
+Les composants installés sont open source, sauf n8n :
 
 | Composant | Licence |
 |---|---|
@@ -811,8 +840,11 @@ Les composants installés sont open source :
 | Ollama | MIT |
 | git | GPL-2.0 |
 | Docker Engine | Apache-2.0 |
+| Gitea | MIT |
+| PostgreSQL | PostgreSQL License |
+| n8n, édition communautaire | Sustainable Use License 1.0 |
 
-Seul le service de modèle hébergé, Gemini, fait exception ; le port moteur le rend remplaçable (profil `souverain`).
+Deux composants ne sont pas open source. Gemini, service de modèle hébergé, reste remplaçable par le port moteur (profil `souverain`). n8n est sous Sustainable Use License : elle en permet l'usage pour les besoins internes d'une entreprise, ou un usage non commercial.
 
 ---
 
@@ -820,15 +852,15 @@ Seul le service de modèle hébergé, Gemini, fait exception ; le port moteur le
 
 | # | Décision | Justification |
 |---|---|---|
-| D1 | Deux têtes indépendantes, des spécifications communes, un contrat ; aucun troisième processus | T8 : chaque tête évolue, se déploie et se teste seule ; ce qui doit être identique est spécifié une fois et prouvé par des vecteurs de conformité, pas partagé en code. |
-| D2 | Agent2Dev est propriétaire de la demande et de la boucle ; Agent2Test sert des campagnes | Un cycle n'a qu'un propriétaire : la demande naît et se clôt du côté du développement. |
+| D1 | Deux têtes indépendantes, des spécifications communes, un contrat ; un troisième processus, n8n, porte le couplage sans juger | T8 : chaque tête évolue, se déploie et se teste seule ; ce qui doit être identique est spécifié une fois et prouvé par des vecteurs de conformité, pas partagé en code. n8n ne contient ni critère ni seuil : il lit ses limites dans le catalogue et relaie des décisions prises ailleurs (cadrage §3.2). |
+| D2 | Agent2Dev est propriétaire de la demande et juge de la boucle : diagnostic, correction, contestation ; n8n en tient la mécanique : compteurs, délais, relances, escalades ; Agent2Test sert des campagnes | Un cycle n'a qu'un propriétaire : la demande naît et se clôt du côté du développement. Le jugement reste à une tête, la mécanique au relais (cadrage §3.2). |
 | D3 | Règle de couplage 7E : la livraison, produit de l'E3 d'une itération, ouvre l'E1 d'une campagne ; le rapport, produit de l'E7 de la campagne, alimente l'E4 de l'itération | La fractale 7E s'étend au binôme sans qu'une tête pilote l'autre : chacune est l'environnement de l'autre. |
-| D4 | Contrat versionné en JSON Schema dans `binome/contrat/` ; enveloppe commune ; messages idempotents ; majeure différente refusée | Le seul couplage entre têtes est explicite, vérifiable et évolutif ; chaque tête embarque la version qu'elle parle. |
-| D5 | Transport HTTP local, boîtes d'envoi et de réception durables, accusés et reprises ; MCP réservé aux humains et à l'IDE | Une tête arrêtée ne perd rien et reprend seule : c'est une condition de l'autonomie. |
+| D4 | Contrat versionné en JSON Schema dans `binome/contrat/` ; entre les têtes, l'enveloppe `binome-7e/1`, que n8n valide ; messages idempotents ; majeure différente refusée | Le seul couplage entre têtes est explicite, vérifiable et évolutif ; chaque tête embarque la version qu'elle parle, et chaque dépôt épingle celle de `binome-7e/1`. |
+| D5 | Transport par n8n : chaque tête expose son API HTTP locale ; n8n valide, inscrit dans le Gitea local et achemine ; boîtes d'envoi et de réception durables, accusés et reprises ; MCP réservé aux humains et à l'IDE | Une tête arrêtée ne perd rien et reprend seule : c'est une condition de l'autonomie. Le Gitea local garde la trace de chaque échange : n8n redémarre sans perdre de tâche. |
 | D6 | Oracle ancré par l'humain : critères changés en a2d/CP-1 seulement ; aucune modification pour obtenir la conformité ; clôture « conforme » sur oracle ratifié | Garde contre la co-dérive (T2) et contre la loi de Goodhart. |
 | D7 | Trois régimes de contrôle (`presenter`, `ecart`, `differe`), fixés par configuration humaine pour chaque point, au-dessus de planchers constitutionnels ; `auto` réservé à la simulation | Autonomie par défaut, supervision garantie : c'est la réponse du 27 septembre. |
 | D8 | Enveloppe d'autonomie : budgets, règle de progrès, détection d'oscillation ; toute sortie mène à a2d/CP-5 | Une boucle de rétroaction sans enveloppe peut diverger ou osciller ; l'humain reprend la main à la frontière. |
-| D9 | Réversibilité : toute action autonome est réversible (branche, arbre de travail dédié, instantané de base) ; fusion, poussée, suppression de branche et arbre du développeur restent hors du système | Le régime `differe` n'est sûr que si l'on peut revenir en arrière. |
+| D9 | Réversibilité : toute action autonome est réversible (branche, arbre de travail dédié, instantané de base) ; à la mission, fusion, poussée hors du poste, suppression de branche et arbre du développeur restent hors du système ; à la clôture, une personne pousse la branche prête du Gitea local vers le GitLab du projet | Le régime `differe` n'est sûr que si l'on peut revenir en arrière. Une branche poussée dans le Gitea local reste sur le poste. |
 | D10 | Stockage interne par port, JSON par défaut ; un agent passe à SQLite quand ses données dépassent 250 Ko, sans retour ; un dossier ou un fichier par agent propriétaire | T5 : lisible tant que c'est petit, indexé et transactionnel quand ça grossit ; isolation par agent conservée ; aucune dépendance. |
 | D11 | Journal chaîné au format commun ; corrélation de bout en bout par demande, itération et campagne | Un superviseur suit une demande d'une tête à l'autre sans rapprochement manuel. |
 | D12 | La documentation est le modèle de soi : convention commune ; constitution extraite des documents et écrite par l'humain seul ; valeurs des règles ratifiées reportées par le `referentiel` ; une constitution modifiée attend sa ratification sans empêcher le démarrage | Réponse du 27 septembre et T9 : les documents servent au système pour son propre ajustement ; le point fixe reste humain, sans cérémonie de publication. |
@@ -837,17 +869,17 @@ Seul le service de modèle hébergé, Gemini, fait exception ; le port moteur le
 | D15 | Réflexivité croisée : chaque tête mesure la fiabilité des jugements de l'autre contre l'arbitrage humain | Observation des observateurs à l'échelle du binôme. |
 | D16 | Même moteur pour les deux têtes, Gemini ; contextes séparés ; leçons indexées par moteur | T3 : la diversité passe des moteurs aux contextes (I8) ; l'index par moteur garde le repli local possible. |
 | D17 | Mode solo : chaque tête fonctionne seule ; Agent2Dev sans Agent2Test clôt « non testée » | Modules découplables : aucune tête n'est indispensable à l'autre. |
-| D18 | Node 24 LTS ; Agent2Dev sans dépendance d'exécution ; Agent2Test avec `playwright` seul si AM-3 est ratifié ; Gemini CLI appelé en sous-processus, à une version épinglée | Surface d'attaque minimale ; `pg` devient inutile avec le stockage interne. |
-| D19 | La vue binôme est servie par le tableau de bord d'Agent2Dev, alimentée par l'API de lecture d'Agent2Test | Le propriétaire de la boucle la montre, sans composant supplémentaire. |
-| D20 | Autonomie par défaut : chaque point de contrôle est à son plancher | T1 : la boucle ne s'arrête qu'aux points bloquants par nature et aux cas forcés ; l'humain décide le reste après coup. |
+| D18 | Node 24 LTS ; Agent2Dev sans dépendance d'exécution ; Agent2Test avec `playwright` seul, AM-3 étant ratifié ; Gemini CLI appelé en sous-processus, à une version épinglée | Surface d'attaque minimale ; `pg` devient inutile avec le stockage interne. |
+| D19 | La vue binôme est servie par le tableau de bord d'Agent2Dev, alimentée par l'API de lecture d'Agent2Test et par l'état des tâches dans le Gitea local | Le propriétaire de la demande la montre, sans composant supplémentaire. |
+| D20 | Autonomie par défaut : chaque point de contrôle est à son plancher | T1 : la boucle ne s'arrête qu'aux points bloquants par nature, aux cas forcés et aux points bloquants du binôme ; l'humain décide le reste après coup. |
 | D21 | Moteur : Gemini sous licence Gemini Code Assist ; Gemini CLI sans tête en mode autonome, l'IDE par MCP en mode accompagné ; moteur local branchable par le même port | T6 et T7 : l'autonomie avec le moteur de la mission, la souveraineté de l'exécution et des données, la réversibilité du choix. |
-| D22 | Pipeline sur une instance : plusieurs demandes actives, chacune dans son arbre ; l'instance est prise de la livraison au rapport ; une campagne à la fois | T10 : la boucle raccourcit sans multiplier les instances sur un poste unique. |
+| D22 | Pipeline sur une instance : plusieurs demandes actives, chacune dans son arbre ; l'instance est prise de la livraison au rapport ; une campagne à la fois ; n8n gère la file des demandes et le verrou de l'instance | T10 : la boucle raccourcit sans multiplier les instances sur un poste unique. Le verrou est géré par le relais, qui voit les deux têtes (cadrage §3.2). |
 
 ---
 
-## 12. Amendements proposés à Agent2Test
+## 12. Amendements à Agent2Test
 
-Les documents d'Agent2Test restent en version 0.1 tant que ces amendements ne sont pas ratifiés. Ceux qui sont ratifiés seront appliqués à l'étape 2 (version 0.2).
+Ces amendements sont ratifiés depuis le 4 octobre ; AM-7 reste retiré. Les documents d'Agent2Test restent en version 0.1 jusqu'à l'étape 2, qui les applique (version 0.2).
 
 Dans la colonne « Cible », les éléments visés appartiennent à l'espace d'Agent2Test : ils sont écrits qualifiés (`a2t/H5`), et les sections citées sont celles de ses documents. Dans les autres colonnes, les références nues renvoient au présent document.
 
@@ -865,12 +897,14 @@ Dans la colonne « Cible », les éléments visés appartiennent à l'espace d'A
 | AM-10 | a2t : les trois documents | Un en-tête de convention documentaire (§9.2 du présent document) et des références qualifiées vers les autres espaces. | D12 : les documents d'Agent2Test entrent dans le modèle de soi. |
 | AM-11 | a2t/I5 ; a2t/US-12 | Une réparation de parcours change des cibles, jamais l'`attendu` ni le `critere` d'une étape `verifier`. Un attendu ne change qu'avec le critère dont il découle. | Garde contre la co-dérive (T2). |
 | AM-12 | a2t : `reflexif` ; a2t/US-20 | Réflexivité croisée : fiabilité des livraisons d'Agent2Dev, dérivabilité de ses scénarios, issue des contestations, causes confirmées par l'humain (§6.3 du présent document). | D15. |
-| AM-13 | a2t/H8 ; a2t/D19 ; a2t/US-28 ; a2t/CA-28.3, a2t/CA-28.4 | Node 24 LTS, 22.13 au minimum. Une seule dépendance d'exécution, `playwright`, si AM-3 est ratifié. Gemini CLI est un outil externe, appelé en sous-processus. | H9 ; D18. |
+| AM-13 | a2t/H8 ; a2t/D19 ; a2t/US-28 ; a2t/CA-28.3, a2t/CA-28.4 | Node 24 LTS, 22.13 au minimum. Une seule dépendance d'exécution, `playwright`, AM-3 étant ratifié. Gemini CLI est un outil externe, appelé en sous-processus. | H9 ; D18. |
 | AM-14 | a2t/H6 ; a2t/US-9 ; a2t : `01-architecture.md` §11 | L'instance — URL, ports, santé — arrive par `livraison.effective` (§8.3 du présent document). Le profil d'environnement d'Agent2Test, ratifié en a2t/CP-2, garde ce qui est propre aux tests : stratégie de session, origines autorisées, attribut d'identifiant de test, zones à masquer. | D14 ; I1. |
 | AM-15 | a2t : `01-architecture.md` §2.1 | Le tableau opératoire de l'axiome devient celui de la spécification commune (§2.1 du présent document), cité au lieu d'être répété. | Pas de redondance entre documents. |
 | AM-16 | a2t : `00-cadrage.md` §3, précision 4 ; a2t/H4 ; a2t/D12 ; a2t/C4 ; `01-architecture.md` §4.3 | Moteur par défaut : Gemini CLI sans tête, sous la licence Gemini Code Assist, appelé par Agent2Test lui-même ; c'est le mode autonome. L'adaptateur `externe`, l'IDE par MCP, devient le mode accompagné. Même moteur qu'Agent2Dev. | T1 ; T3 ; T6 ; D21. |
 | AM-17 | a2t/T6 ; a2t/I5 ; a2t/I12 ; module `plan` | Contextes séparés (I8) : aucun contexte d'Agent2Test ne contient le diff, le plan de réalisation ou le raisonnement d'Agent2Dev. À l'import d'un plan, chaque attendu d'une étape `verifier` doit découler d'un critère ; sinon il est signalé dans `plan.accuse`. Les consignes d'Agent2Test adoptent une posture de réfutation. Le moteur distinct recommandé par a2t/T6 ne l'est plus. | T2 ; T3 ; D16. |
 | AM-18 | a2t : `01-architecture.md` §6.6 ; a2t/D11 ; a2t/CA-23.1 | La constitution est extraite des documents, selon la convention (§9 du présent document), au lieu d'un fichier JSON. Après ratification en a2t/CP-4, le `referentiel` reporte la valeur d'une règle dans le tableau de ses documents. Une constitution modifiée par l'humain ouvre a2t/CP-4 : jusqu'à sa ratification, Agent2Test applique la dernière ratifiée, au lieu de refuser de démarrer. | T9 ; D12. |
+
+AM-5 s'applique avec le couplage par n8n (cadrage §3.2) : une contestation va à une personne, en a2d/CP-5, et Agent2Test en reçoit la décision, jamais `verdict.conteste`.
 
 ---
 
@@ -882,3 +916,4 @@ Dans la colonne « Cible », les éléments visés appartiennent à l'espace d'A
 | agents-modif | 21 septembre | agent générique piloté par des fiches ; vérification « avant / après » ; boucle observant-apprenant ; décision valider-corriger-rejeter |
 | Agent2Test | 25 septembre | fractale 7E en code (`Cycle7E`, `Cellule7E`) ; premier et second ordres séparés ; constitution vérifiée par son empreinte ; grand livre ; épinglage ; port moteur ; convention d'entrée (annexe A) |
 | Binôme | 27 et 28 septembre | spécifications communes et vecteurs de conformité ; contrat ; règle de couplage ; régimes de contrôle ; enveloppe d'autonomie ; réflexivité croisée ; contextes séparés ; modèle de soi |
+| Binôme orchestré par n8n | 3 et 4 octobre | un relais qui porte le couplage sans juger ; Gitea local comme milieu ; enveloppe `binome-7e/1` ; points humains réunis ; audit par échantillon |
