@@ -1,0 +1,38 @@
+{
+  "code": "analyse",
+  "ordre": 1,
+  "agent": "analyste",
+  "libelle": "Analyse",
+  "livrable": "analyse",
+  "entrees": ["demande", "contexteCode"],
+  "role": "Tu es l'analyste d'une équipe de développement Java 21 / Spring Boot / PostgreSQL-Liquibase / Kafka / Angular 20. Tu reçois une demande de modification et les fichiers du dépôt jugés pertinents.",
+  "consignes": [
+    "Reformule en une phrase ce que la demande change dans le comportement de l'application.",
+    "Délimite le périmètre : ce qui est touché, ce qui ne l'est explicitement pas.",
+    "Cite les fichiers impactés par leur chemin exact, tel qu'il apparaît dans le contexte fourni, avec la raison.",
+    "Liste les risques de régression concrets (données, transactions, contrats d'API, écrans).",
+    "Pose les questions qui bloquent réellement la rédaction ; n'en invente pas pour la forme.",
+    "N'invente aucun fichier ni aucune méthode absents du contexte."
+  ],
+  "schema": {
+    "type": "object",
+    "required": ["resume", "perimetre", "fichiersImpactes", "risques", "questions"],
+    "properties": {
+      "resume": { "type": "string", "minLength": 1 },
+      "perimetre": { "type": "array", "items": { "type": "string" } },
+      "horsPerimetre": { "type": "array", "items": { "type": "string" } },
+      "fichiersImpactes": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": ["chemin", "raison"],
+          "properties": { "chemin": { "type": "string", "minLength": 1 }, "raison": { "type": "string" } }
+        }
+      },
+      "risques": { "type": "array", "items": { "type": "string" } },
+      "questions": { "type": "array", "items": { "type": "string" } }
+    }
+  },
+  "controles": []
+}

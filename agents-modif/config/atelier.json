@@ -1,0 +1,61 @@
+{
+  "mode": "simulation",
+  "moteur": {
+    "type": "claude",
+    "url": "https://api.anthropic.com/v1/messages",
+    "modele": "claude-sonnet-5",
+    "maxTokens": 8000,
+    "delaiMs": 300000
+  },
+  "depot": {
+    "racine": "",
+    "extensions": [
+      ".java",
+      ".ts",
+      ".html",
+      ".scss",
+      ".sql",
+      ".xml",
+      ".yml",
+      ".yaml",
+      ".properties",
+      ".py",
+      ".js",
+      ".json"
+    ],
+    "exclusions": [
+      "node_modules",
+      "target",
+      "dist",
+      "build",
+      ".git",
+      ".angular",
+      ".idea"
+    ],
+    "maxFichiers": 8,
+    "maxCaracteresParFichier": 12000
+  },
+  "orchestration": {
+    "maxIterationsParPhase": 3,
+    "tentativesSchema": 2,
+    "validationAuto": false
+  },
+  "apprenant": {
+    "fichier": "donnees/lecons.json",
+    "ratificationRequise": true
+  },
+  "observant": {
+    "fenetre": 10,
+    "seuilCorrection": 0.5,
+    "expositionMin": 3,
+    "margeRetrait": 0.15
+  },
+  "journal": {
+    "repertoire": "donnees/journal"
+  },
+  "sortie": "sortie",
+  "tableauDeBord": {
+    "hote": "127.0.0.1",
+    "port": 4600
+  }
+}

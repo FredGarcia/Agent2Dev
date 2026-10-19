@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atelier de modification</title>
+<style>
+  :root {
+    --fond: #eef1f4; --papier: #ffffff; --encre: #1c2733; --gris: #5b6875; --trait: #cfd6dd;
+    --bleu: #1f4e79; --valider: #2d6a45; --corriger: #9a5b0c; --rejeter: #a33434;
+    --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fond); color: var(--encre); font: 15px/1.5 "Segoe UI", system-ui, Roboto, sans-serif; }
+  header { background: var(--encre); color: #fff; padding: 14px 24px; display: flex; gap: 32px; align-items: center; flex-wrap: wrap; }
+  header h1 { font-size: 17px; font-weight: 600; margin: 0; }
+  #rail { display: flex; gap: 0; list-style: none; margin: 0; padding: 0; }
+  #rail li { padding: 6px 16px 6px 22px; background: #2c3a48; color: #9fb0c0; font-size: 13px;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%, 10px 50%); margin-left: -6px; }
+  #rail li:first-child { clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%); margin-left: 0; padding-left: 14px; }
+  #rail li.faite { background: #3d5a45; color: #d8eadc; }
+  #rail li.courante { background: #fff; color: var(--encre); font-weight: 600; }
+  #rail-demande { font-size: 13px; color: #9fb0c0; }
+  main { display: grid; grid-template-columns: 300px minmax(0, 1fr) 320px; gap: 20px; padding: 20px 24px; align-items: start; }
+  section { background: var(--papier); border: 1px solid var(--trait); border-radius: 6px; padding: 16px; margin-bottom: 20px; }
+  h2 { font-size: 15px; margin: 0 0 10px; }
+  h3 { font-size: 14px; margin: 16px 0 6px; }
+  label { display: block; font-size: 13px; color: var(--gris); margin: 8px 0 4px; }
+  input, textarea { width: 100%; font: inherit; padding: 7px 9px; border: 1px solid var(--trait); border-radius: 4px; background: #fbfcfd; }
+  textarea { min-height: 110px; resize: vertical; }
+  button { font: inherit; font-size: 14px; padding: 7px 14px; border-radius: 4px; border: 1px solid var(--bleu); background: var(--bleu); color: #fff; cursor: pointer; }
+  button.second { background: #fff; color: var(--bleu); }
+  button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid #7aa7d6; outline-offset: 1px; }
+  button:disabled { opacity: .5; cursor: default; }
+  .liste { list-style: none; margin: 0; padding: 0; }
+  .liste li { padding: 8px 0; border-top: 1px solid #e6eaee; font-size: 14px; }
+  .liste li:first-child { border-top: 0; }
+  .statut { display: inline-block; font-size: 12px; padding: 1px 7px; border-radius: 10px; background: #e3e8ed; color: var(--gris); }
+  .statut.livree, .statut.active { background: #dcebe1; color: var(--valider); }
+  .statut.rejetee, .statut.erreur, .statut.suspendue { background: #f3dddd; color: var(--rejeter); }
+  .statut.candidate, .statut.en_cours { background: #f5e7cf; color: var(--corriger); }
+  #proposition .vide { color: var(--gris); }
+  .entete-prop { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .meta { font-size: 13px; color: var(--gris); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid #e6eaee; vertical-align: top; }
+  th { color: var(--gris); font-weight: 600; }
+  .defile { overflow-x: auto; }
+  pre { font: 13px/1.45 var(--mono); background: #f6f8fa; border: 1px solid #e3e8ed; border-radius: 4px; padding: 10px; overflow-x: auto; margin: 6px 0; }
+  .moins { color: var(--rejeter); } .plus { color: var(--valider); }
+  .verif { font-size: 12px; font-weight: 600; }
+  .verif.ok { color: var(--valider); } .verif.ko { color: var(--rejeter); }
+  #decision { position: sticky; bottom: 0; background: var(--papier); border-top: 2px solid var(--encre); margin: 16px -16px -16px; padding: 14px 16px; border-radius: 0 0 6px 6px; }
+  #decision .boutons { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+  #b-valider { background: var(--valider); border-color: var(--valider); }
+  #b-corriger { background: var(--corriger); border-color: var(--corriger); }
+  #b-rejeter { background: #fff; color: var(--rejeter); border-color: var(--rejeter); }
+  #flux { font: 12px/1.5 var(--mono); max-height: 260px; overflow-y: auto; color: var(--gris); }
+  #flux div.alerte { color: var(--rejeter); }
+  .lecon { font-size: 14px; }
+  .lecon .actions { margin-top: 4px; display: flex; gap: 6px; }
+  .lecon button { font-size: 12px; padding: 3px 9px; }
+  @media (max-width: 1100px) { main { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: no-preference) { #proposition.nouvelle { animation: arrivee .35s ease-out; } }
+  @keyframes arrivee { from { box-shadow: 0 0 0 3px #7aa7d6; } to { box-shadow: none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Atelier de modification</h1>
+  <ol id="rail"></ol>
+  <span id="rail-demande">Aucune demande en cours</span>
+</header>
+<main>
+  <div>
+    <section>
+      <h2>Nouvelle demande</h2>
+      <label for="f-titre">Titre</label>
+      <input id="f-titre" placeholder="Refuser un nom de tâche vide">
+      <label for="f-texte">Demande</label>
+      <textarea id="f-texte" placeholder="Décrire le changement attendu, tel que formulé par le métier."></textarea>
+      <label for="f-indices">Fichiers ou classes à privilégier (séparés par des virgules)</label>
+      <input id="f-indices" placeholder="ChecklistService">
+      <p><button id="b-soumettre">Soumettre la demande</button></p>
+    </section>
+    <section>
+      <h2>Demandes</h2>
+      <ul class="liste" id="demandes"><li class="meta">Aucune demande soumise.</li></ul>
+    </section>
+  </div>
+
+  <div>
+    <section id="proposition">
+      <h2>Proposition à trancher</h2>
+      <p class="vide">Rien à trancher. Les propositions des agents apparaissent ici, phase par phase.</p>
+    </section>
+  </div>
+
+  <div>
+    <section>
+      <h2>Leçons</h2>
+      <ul class="liste" id="lecons"><li class="meta">Aucune leçon. Elles naissent des corrections.</li></ul>
+    </section>
+    <section>
+      <h2>Observation</h2>
+      <div id="bilan" class="meta">Pas encore de mesure.</div>
+    </section>
+    <section>
+      <h2>Flux</h2>
+      <div id="flux"></div>
+    </section>
+  </div>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const api = async (url, corps) => {
+  const r = await fetch(url, corps ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(corps) } : {});
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.erreur ?? r.statusText);
+  return d;
+};
+let phases = [];
+let courante = null;
+const avancement = {};
+
+function rail(demandeId, phase, etat) {
+  if (demandeId) avancement[demandeId] = { phase, etat };
+  const a = demandeId ? avancement[demandeId] : null;
+  const i = a ? phases.findIndex((p) => p.code === a.phase) : -1;
+  $('#rail').innerHTML = phases.map((p, k) =>
+    `<li class="${a && (k < i || a.etat === 'fin') ? 'faite' : k === i ? 'courante' : ''}">${esc(p.libelle)}</li>`).join('');
+  $('#rail-demande').textContent = demandeId ? demandeId : 'Aucune demande en cours';
+}
+
+const liste = (t, xs) => xs?.length ? `<h3>${t}</h3><ul>${xs.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
+const rendus = {
+  analyse: (c) => `<p>${esc(c.resume)}</p>${liste('Périmètre', c.perimetre)}${liste('Hors périmètre', c.horsPerimetre)}
+    <h3>Fichiers impactés</h3><div class="defile"><table><tr><th>Fichier</th><th>Raison</th></tr>
+    ${c.fichiersImpactes.map((f) => `<tr><td><code>${esc(f.chemin)}</code></td><td>${esc(f.raison)}</td></tr>`).join('')}</table></div>
+    ${liste('Risques', c.risques)}${liste('Questions ouvertes', c.questions)}`,
+  cahier: (c) => `<p><strong>Règle.</strong> ${esc(c.demandeReformulee)}</p>
+    ${liste('Hypothèses', c.hypotheses.map((h) => `${h.code} — ${h.texte}`))}${liste('Décisions', c.decisions)}
+    ${c.us.map((u) => `<h3>${esc(u.code)} — ${esc(u.titre)}</h3><p>En tant que ${esc(u.enTantQue)}, je veux ${esc(u.jeVeux)}, afin de ${esc(u.afinDe)}.</p>
+      <ul>${u.criteres.map((ca) => `<li><strong>${esc(ca.code)}</strong> ${esc(ca.texte)}</li>`).join('')}</ul>`).join('')}`,
+  preconisation: (c) => `<div class="defile"><table><tr><th>Option</th><th>Libellé</th><th>Effort</th><th>Avantages</th><th>Inconvénients</th></tr>
+    ${c.options.map((o) => `<tr><td>${esc(o.code)}</td><td>${esc(o.libelle)}</td><td>${esc(o.effort)}</td><td>${esc(o.avantages.join(' ; '))}</td><td>${esc(o.inconvenients.join(' ; '))}</td></tr>`).join('')}</table></div>
+    <p><strong>Recommandation : ${esc(c.recommandation.option)}.</strong> ${esc(c.recommandation.justification)}</p>${liste('Points de vigilance', c.pointsDeVigilance)}`,
+  developpement: (c, p) => {
+    const statuts = new Map((p.verification?.resultats ?? []).map((r) => [r.index, r.statut]));
+    return c.modifications.map((m, i) => {
+      const s = statuts.get(i) ?? 'non vérifiée';
+      return `<h3><code>${esc(m.fichier)}</code> — ${esc(m.critere)} <span class="verif ${s === 'ok' ? 'ok' : 'ko'}">${esc(s)}</span></h3>
+        <p class="meta">${esc(m.justification)}</p>
+        <pre>${m.avant.split('\n').map((l) => `<span class="moins">- ${esc(l)}</span>`).join('\n')}\n${m.apres.split('\n').map((l) => `<span class="plus">+ ${esc(l)}</span>`).join('\n')}</pre>`;
+    }).join('') + (c.nouveauxFichiers ?? []).map((n) => `<h3>Nouveau fichier <code>${esc(n.fichier)}</code></h3><pre>${esc(n.contenu)}</pre>`).join('');
+  }
+};
+
+function afficherProposition(p) {
+  const zone = $('#proposition');
+  if (!p) {
+    courante = null;
+    zone.innerHTML = '<h2>Proposition à trancher</h2><p class="vide">Rien à trancher. Les propositions des agents apparaissent ici, phase par phase.</p>';
+    return;
+  }
+  courante = p;
+  const corps = rendus[p.phase] ? rendus[p.phase](p.contenu, p) : `<pre>${esc(JSON.stringify(p.contenu, null, 2))}</pre>`;
+  zone.innerHTML = `<div class="entete-prop"><h2>${esc(p.libelle)} — ${esc(p.demandeId)}</h2>
+      <span class="meta">itération ${p.iteration} · ${esc(p.meta.agent)} · ${esc(p.meta.moteur)} · ${p.meta.tentatives} tentative(s)${p.lecons.length ? ` · leçons ${esc(p.lecons.join(', '))}` : ''}</span></div>
+    ${corps}
+    <div id="decision">
+      <label for="d-commentaire">Commentaire (obligatoire pour corriger ; il devient une leçon candidate)</label>
+      <textarea id="d-commentaire" rows="3" style="min-height:0"></textarea>
+      <div class="boutons">
+        <button id="b-valider">Valider et passer à la suite</button>
+        <button id="b-corriger">Renvoyer avec correction</button>
+        <button id="b-rejeter">Rejeter la demande</button>
+      </div>
+    </div>`;
+  zone.classList.remove('nouvelle'); void zone.offsetWidth; zone.classList.add('nouvelle');
+  for (const d of ['valider', 'corriger', 'rejeter']) $(`#b-${d}`).onclick = () => decider(d);
+  rail(p.demandeId, p.phase);
+}
+
+async function decider(decision) {
+  if (!courante) return;
+  const commentaire = $('#d-commentaire').value;
+  try {
+    await api('/api/decisions', { demandeId: courante.demandeId, phase: courante.phase, decision, commentaire });
+    afficherProposition(null);
+    const attentes = await api('/api/attentes');
+    if (attentes.length) afficherProposition(attentes[0]);
+  } catch (e) { alert(e.message); }
+}
+
+async function rafraichirDemandes() {
+  const ds = await api('/api/demandes');
+  $('#demandes').innerHTML = ds.length ? ds.slice().reverse().map((d) => `<li><strong>${esc(d.id)}</strong> <span class="statut ${esc(d.statut)}">${esc(d.statut)}</span><br>${esc(d.titre)}
+    ${d.dossier ? `<br><a href="/api/demandes/${encodeURIComponent(d.id)}/livrable.md">Télécharger le livrable</a>` : ''}${d.erreur ? `<br><span class="meta">${esc(d.erreur)}</span>` : ''}</li>`).join('')
+    : '<li class="meta">Aucune demande soumise.</li>';
+}
+
+async function rafraichirLecons() {
+  const ls = await api('/api/lecons');
+  $('#lecons').innerHTML = ls.length ? ls.slice().reverse().map((l) => `<li class="lecon"><strong>${esc(l.id)}</strong> <span class="statut ${esc(l.statut)}">${esc(l.statut)}</span> <span class="meta">${esc(l.phase)} · ${l.occurrences}×${l.mesure ? ` · exposée ${l.mesure.exposition}` : ''}</span><br>${esc(l.regle)}
+      <div class="actions">${l.statut !== 'active' ? `<button data-l="${esc(l.id)}" data-a="ratifier">Ratifier</button>` : ''}${l.statut !== 'suspendue' ? `<button class="second" data-l="${esc(l.id)}" data-a="suspendre">Suspendre</button>` : ''}</div></li>`).join('')
+    : '<li class="meta">Aucune leçon. Elles naissent des corrections.</li>';
+  for (const b of document.querySelectorAll('#lecons button')) b.onclick = async () => { await api(`/api/lecons/${b.dataset.l}/${b.dataset.a}`, {}); rafraichirLecons(); };
+}
+
+async function rafraichirBilan() {
+  const b = await api('/api/bilan');
+  const lignes = Object.entries(b.phases);
+  const pct = (x) => x == null ? '—' : `${Math.round(x * 100)} %`;
+  $('#bilan').innerHTML = lignes.length ? `<table><tr><th>Phase</th><th>Prop.</th><th>Validées</th><th>1er passage</th></tr>
+    ${lignes.map(([p, x]) => `<tr><td>${esc(p)}</td><td>${x.propositions}</td><td>${x.validees}</td><td>${pct(x.premierPassage)}</td></tr>`).join('')}</table>
+    ${b.enAlerte.length ? `<p style="color:var(--rejeter)">En dérive : ${esc(b.enAlerte.join(', '))}</p>` : ''}` : 'Pas encore de mesure.';
+}
+
+function journal(e, texte) {
+  const d = document.createElement('div');
+  if (e.type === 'alerte' || e.type.endsWith('erreur') || e.type === 'validation_echec') d.className = 'alerte';
+  d.textContent = `${e.horodate.slice(11, 19)} ${texte}`;
+  $('#flux').prepend(d);
+}
+
+$('#b-soumettre').onclick = async () => {
+  const texte = $('#f-texte').value.trim();
+  if (!texte) return alert('Décrire la demande avant de la soumettre.');
+  const indices = $('#f-indices').value.split(',').map((x) => x.trim()).filter(Boolean);
+  try {
+    await api('/api/demandes', { titre: $('#f-titre').value, texte, indices });
+    $('#f-titre').value = ''; $('#f-texte').value = ''; $('#f-indices').value = '';
+    rafraichirDemandes();
+  } catch (e) { alert(e.message); }
+};
+
+const flux = new EventSource('/api/flux');
+flux.onmessage = ({ data }) => {
+  const e = JSON.parse(data);
+  const textes = {
+    demande_soumise: () => `${e.demandeId} soumise`,
+    demande_debut: () => `${e.demandeId} démarre`,
+    contexte_code: () => `${e.demandeId} : ${e.fichiers.length} fichier(s) retenu(s)`,
+    proposition: () => `${e.demandeId} ${e.phase} : proposition ${e.iteration}`,
+    decision: () => `${e.demandeId} ${e.phase} : ${e.decision}`,
+    validation_echec: () => `${e.phase} : sortie non conforme (tentative ${e.tentative})`,
+    verification_code: () => `${e.demandeId} : code ${e.ok ? 'applicable' : 'NON applicable'}`,
+    lecon_candidate: () => `leçon ${e.lecon.id} candidate`,
+    lecon_active: () => `leçon ${e.lecon.id} active`,
+    lecon_suspendue: () => `leçon ${e.lecon.id} suspendue : ${e.motif}`,
+    alerte: () => `alerte : ${e.message}`,
+    demande_fin: () => `${e.demandeId} ${e.statut}`,
+    demande_erreur: () => `${e.demandeId} en erreur : ${e.erreur}`
+  };
+  if (textes[e.type]) journal(e, textes[e.type]());
+  if (e.type === 'proposition' && !courante) afficherProposition(e);
+  if (e.type === 'demande_fin') rail(e.demandeId, e.phase ?? phases.at(-1)?.code, 'fin');
+  if (e.type.startsWith('demande') || e.type === 'livrable_ecrit') rafraichirDemandes();
+  if (e.type.startsWith('lecon')) rafraichirLecons();
+  if (['decision', 'proposition', 'alerte'].includes(e.type)) rafraichirBilan();
+};
+
+(async () => {
+  phases = await api('/api/phases');
+  rail(null);
+  const attentes = await api('/api/attentes');
+  if (attentes.length) afficherProposition(attentes[0]);
+  rafraichirDemandes(); rafraichirLecons(); rafraichirBilan();
+})();
+</script>
+</body>
+</html>
