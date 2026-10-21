@@ -1,0 +1,61 @@
+---
+espace: a2d
+document: suite
+version: 1.0.0
+statut: proposition
+date: 2026-10-21
+amont:
+  - a2d/cadrage@0.3.0
+  - a2d/architecture@0.3.0
+---
+
+# Agent2Dev — Suite de l'étape 1
+
+> Note du 21 octobre 2026 · les documents de l'étape 1 restent tels que le 4 octobre les a ratifiés ; cette note dit ce qui en reste en vigueur, et où la conception se poursuit.
+> Documents de l'étape 1 : [`00-cadrage.md`](00-cadrage.md) · [`01-architecture.md`](01-architecture.md)
+
+## 1. Ce qui a été décidé le 21 octobre
+
+- Agent2Dev reste la tête de développement, et applique le skill agent-tdd-jira comme méthode.
+- Tout reste en local et s'enchaîne à la main. Le développeur lance l'application sur Tomcat en local, et ses batchs ; l'équipe déploie à la main.
+- Agent2Test devient une spécification transmissible, `agent2test` 1.0.0, avec laquelle Agent2Dev travaille en binôme par des fichiers que le développeur porte.
+- Agent2Dev devient lui aussi une spécification transmissible : `agent2dev` 1.0.0, dans le dépôt Agent2Prompt (`specs/agent2dev/`, transmission `transmissions/agent2dev-1.0.0.md`), proposée par la pull request n° 7 du dépôt Agent2Prompt. Le code se construira ensuite, par lots, dans le dossier `agent2dev/` du présent dépôt.
+- Les points de validation sont toujours présentés ; l'autonomie par point est réservée.
+- L'écriture du code est une option : par défaut, Agent2Dev travaille dans une copie de travail et remet un patch par scénario accepté, que le développeur applique lui-même.
+
+## 2. Ce qui reste en vigueur
+
+Les choix d'architecture de l'étape 1 restent la source : le noyau 7E et ses quatre échelles, l'agent générique piloté par des fiches, le `depot` seul écrivain et sa vérification « avant / après », la séparation des deux ordres cybernétiques, la gouvernance des leçons par ratification humaine, le stockage JSON puis SQLite au-delà de 250 Ko.
+
+Les invariants I1 à I15 deviennent des invariants de dimension de la spécification ; la table de correspondance est dans `specs/agent2dev/SKILL.md`, section 11.1, du dépôt Agent2Prompt.
+
+## 3. Ce qui est remplacé
+
+| Étape 1, version 0.3.0 | Spécification agent2dev 1.0.0 |
+|---|---|
+| couplage des deux têtes par n8n, enveloppe `binome-7e/1` | enchaînement à la main : remise du plan validé, journal de tests d'Agent2Test lu par le script du skill (module `binome`) |
+| contestation tranchée par une personne en a2d/CP-5 | désaccord présenté au développeur ; Agent2Dev ne conteste ni ne réécrit aucun verdict |
+| points CP-0 à CP-6, régime `differe` d'a2d/CP-1 à la mission | points V0 à V5 du skill, toujours présentés, et CP-4 pour la gouvernance ; autonomie réservée (D22) |
+| option B : `exploitant`, instance dédiée sous Docker, sonde, instantanés de base | `executant` limité à la compilation, aux tests et aux scripts du skill ; ni démarrage, ni déploiement, ni batch |
+| arbre de travail et branche `a2d/<demande>` créés par Agent2Dev, poussée vers un Gitea local | copie de travail dans les données d'Agent2Dev, un patch par scénario accepté, appliqué par le développeur ; écriture dans l'arbre de la demande sur autorisation ; aucune poussée |
+| sept fiches : analyse, cahier, scénarios, préconisation, plan de réalisation, développement, diagnostic | huit fiches calées sur le skill : analyse, impact, variantes, contrat, rouge, vert, remanié, rapport |
+| demande en texte libre, ou issue « à faire » en mode binôme | demande Jira exportée en MHTML, extraite par le script du skill |
+| adaptateurs `gemini-cli`, `externe`, `compatible-openai`, `anthropic`, `simulation` | `externe` (Gemini Code Assist par MCP), `compatible-openai`, `simulation` |
+| mémoire et recherche hybride sur le code | réservées (D21) |
+| plusieurs demandes actives, file et verrou gérés par n8n | une demande à la fois par instance ; une instance par worktree du kit en mode parallèle |
+| AI Act | hors périmètre ; restent l'origine des productions du moteur et la gouvernance |
+
+## 4. Les points ouverts du 4 octobre
+
+| Point | Ce qu'il devient |
+|---|---|
+| allers-retours entre les têtes : 3 par tâche dans le catalogue de n8n, 5 itérations par demande | sans objet pour n8n ; un scénario se corrige au plus `budget.correctionsParScenario` fois, 3 par défaut, entre 1 et 5 |
+| budgets d'appels au moteur et de jetons | budgets d'essais par sortie et par pas, durée de travail par demande ; les jetons sont mesurés, sans budget |
+| licence de n8n, montage réseau de son conteneur, points bloquants du binôme | sans objet : pas de n8n ; le développeur publie lui-même, aucun agent n'ouvre de pull request |
+| `binome/` dans le dépôt du binôme (H11), vérificateur des documents au statut `remplace` | sans objet pour la spécification ; à reprendre si ces dossiers servent de nouveau |
+
+## 5. Ce qui ne change pas ici
+
+- Les documents de l'étape 1, du niveau Agent2Dev comme du niveau binôme, gardent leur version, leur statut et leur contenu : ils sont la trace de la ratification du 4 octobre.
+- `agents-modif/` reste en place jusqu'à la recette d'Agent2Dev 1.0.0, puis sera retiré.
+- Le dossier `documentation/agent2dev/` garde les deux patchs et la note d'origine de la ratification, appliqués par la pull request qui ajoute cette note.
