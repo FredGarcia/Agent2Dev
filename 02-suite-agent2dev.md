@@ -19,7 +19,7 @@ amont:
 - Agent2Dev reste la tête de développement, et applique le skill agent-tdd-jira comme méthode.
 - Tout reste en local et s'enchaîne à la main. Le développeur lance l'application sur Tomcat en local, et ses batchs ; l'équipe déploie à la main.
 - Agent2Test devient une spécification transmissible, `agent2test` 1.0.0, puis 1.1.0 et 1.2.0, avec laquelle Agent2Dev travaille en binôme par des fichiers que le développeur porte, ou que l'échange par dossiers porte à sa place.
-- Agent2Dev devient lui aussi une spécification transmissible, dans le dépôt Agent2Prompt (`specs/agent2dev/`) : `agent2dev` 1.0.0, publiée par la pull request n° 7, fusionnée, avec `agent2test` 1.1.0 et `agent-tdd-jira` 1.3.1 ; puis `agent2dev` 1.1.0 (transmission `transmissions/agent2dev-1.1.0.md`), proposée par la pull request n° 10, avec `agent2test` 1.2.0 et `agent-tdd-jira` 1.3.2. Le code se construira ensuite, par lots, dans le dossier `agent2dev/` du présent dépôt.
+- Agent2Dev devient lui aussi une spécification transmissible, dans le dépôt Agent2Prompt (`specs/agent2dev/`) : `agent2dev` 1.0.0, publiée par la pull request n° 7, fusionnée, avec `agent2test` 1.1.0 et `agent-tdd-jira` 1.3.1 ; puis `agent2dev` 1.1.0 (transmission `transmissions/agent2dev-1.1.0.md`), publiée par la pull request n° 10, fusionnée le 24 octobre, avec `agent2test` 1.2.0 et `agent-tdd-jira` 1.3.2. Le code se construira ensuite, par lots, dans le dossier `agent2dev/` du présent dépôt.
 - Les points de validation sont toujours présentés ; l'autonomie par point est réservée.
 - L'écriture du code est une option : par défaut, Agent2Dev travaille dans une copie de travail et remet un patch par scénario accepté, que le développeur applique lui-même.
 
