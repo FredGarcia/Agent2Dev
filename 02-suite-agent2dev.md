@@ -2,7 +2,7 @@
 espace: a2d
 document: suite
 version: 1.2.0
-statut: proposition
+statut: ratifie
 date: 2026-10-24
 amont:
   - a2d/cadrage@0.3.0
@@ -11,7 +11,7 @@ amont:
 
 # Agent2Dev — Suite de l'étape 1
 
-> Note du 21 octobre 2026, complétée le 22 octobre des amendements de la ratification, puis le 24 octobre du fichier SQLite unique et de l'échange par dossiers · les documents de l'étape 1 restent tels que le 4 octobre les a ratifiés ; cette note dit ce qui en reste en vigueur, et où la conception se poursuit.
+> Note du 21 octobre 2026, complétée le 22 octobre des amendements de la ratification, puis le 24 octobre du fichier SQLite unique et de l'échange par dossiers ; version 1.2.0 du 24 octobre : ratifiée, par la fusion de la pull request n° 2 · les documents de l'étape 1 restent tels que le 4 octobre les a ratifiés ; cette note dit ce qui en reste en vigueur, et où la conception se poursuit.
 > Documents de l'étape 1 : [`00-cadrage.md`](00-cadrage.md) · [`01-architecture.md`](01-architecture.md)
 
 ## 1. Ce qui a été décidé le 21 octobre
